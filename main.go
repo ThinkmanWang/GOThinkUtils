@@ -34,6 +34,12 @@ func datetimeTest() {
 	for i := 0; i < len(lstDate); i++ {
 		fmt.Println(lstDate[i])
 	}
+
+	for _, szDate := range lstDate {
+		fmt.Println(szDate)
+	}
+
+	fmt.Println(thinkutils.DateTime.StartEndOfWeek("2021-12-16"))
 }
 
 func main() {

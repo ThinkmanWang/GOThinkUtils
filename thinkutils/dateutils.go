@@ -124,3 +124,25 @@ func (this datetime) DateBetweenStartEnd(szDateStart string, szDateEnd string) [
 
 	return lstRet
 }
+
+func (this datetime) StartEndOfWeek(szDate string) (string, string) {
+	//calc start
+	var szStart string = ""
+	var szEnd string = ""
+
+	nTimpstamp := this.DateToTimestamp(szDate)
+	tm := time.Unix(nTimpstamp, 0)
+	for {
+		if time.Monday == tm.Weekday() {
+			szStart = tm.Format("2006-01-02")
+			break
+		}
+
+		nTimpstamp -= 3600 * 24
+		tm = time.Unix(nTimpstamp, 0)
+	}
+
+	szEnd = time.Unix(nTimpstamp+6*3600*24, 0).Format("2006-01-02")
+
+	return szStart, szEnd
+}
