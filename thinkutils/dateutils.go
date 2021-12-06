@@ -104,3 +104,23 @@ func (this datetime) LastDayOfMonth(szDate string) string {
 
 	return this.TimeStampToDate(nTimestamp)
 }
+
+func (this datetime) DateBetweenStartEnd(szDateStart string, szDateEnd string) []string {
+	lstRet := make([]string, 2)
+
+	nTimestampStart := this.DateToTimestamp(szDateStart)
+	nTimestampEnd := this.DateToTimestamp(szDateEnd)
+
+	nStart := nTimestampStart + 3600*24
+	for {
+		if nStart >= nTimestampEnd {
+			break
+		}
+
+		lstRet = append(lstRet, this.TimeStampToDate(nStart))
+
+		nStart += 3600 * 24
+	}
+
+	return lstRet
+}

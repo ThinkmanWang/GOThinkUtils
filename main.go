@@ -29,6 +29,12 @@ func datetimeTest() {
 	fmt.Println(thinkutils.DateTime.DateToTimestamp("2021-12-06"))
 	fmt.Println(thinkutils.DateTime.FirstDayOfMonth("2021-10-20"))
 	fmt.Println(thinkutils.DateTime.LastDayOfMonth("2021-03-01"))
+
+	lstDate := thinkutils.DateTime.DateBetweenStartEnd("2021-12-01", "2021-12-10")
+	var i int
+	for i = 0; i < len(lstDate); i++ {
+		fmt.Println(lstDate[i])
+	}
 }
 
 func main() {
