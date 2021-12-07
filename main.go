@@ -1,8 +1,8 @@
 package main
 
 import (
-	"GOThinkUtils/logger"
 	"GOThinkUtils/thinkutils"
+	"GOThinkUtils/thinkutils/logger"
 	"fmt"
 	"strconv"
 	"time"
