@@ -105,6 +105,14 @@ func jsonTest() {
 
 	szTxt, _ := jsonparser.GetString(data, "person", "name", "fullName")
 	log.Info(szTxt)
+
+	nFollower, _ := jsonparser.GetInt(data, "person", "github", "followers")
+	log.Info("%d", nFollower)
+
+	jsonparser.ArrayEach(data, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		szUrl, _ := jsonparser.GetString(value, "url")
+		log.Info(szUrl)
+	}, "person", "avatars")
 }
 
 func main() {
