@@ -2,6 +2,7 @@ package main
 
 import (
 	"GOThinkUtils/tcp/protocol"
+	"GOThinkUtils/thinkutils"
 	"GOThinkUtils/thinkutils/logger"
 	"flag"
 	"fmt"
@@ -98,7 +99,7 @@ func onMsg(c *tcpsock.TcpConn, p *protocol.PingPacket) {
 	canPing = true
 	lag := int(time.Now().Sub(sendTick) / time.Millisecond)
 	stats.lags = append(stats.lags, lag)
-	fmt.Printf("%d bytes from %s: time=%dms\n", packetLen, IPFromNetAddr(c.RawConn().RemoteAddr()), lag)
+	fmt.Printf("%d bytes from %s: time=%dms\n", p.BodyLen, IPFromNetAddr(c.RawConn().RemoteAddr()), lag)
 }
 
 func parseFlag() {
@@ -114,10 +115,11 @@ func parseFlag() {
 }
 
 func genPacket() {
-	packet = &protocol.PingPacket{
-		BodyLen: uint32(packetLen) - protocol.PacketHeadSize,
-		Body:    make([]byte, packetLen),
-	}
+	packet = protocol.NewPingPacket(thinkutils.StringUtils.StringToBytes("012345678901234567890123456789012345678901234567890123456789"))
+	//packet = &protocol.PingPacket{
+	//	BodyLen: uint32(packetLen) - protocol.PacketHeadSize,
+	//	Body:    make([]byte, packetLen),
+	//}
 }
 
 func printStats() {

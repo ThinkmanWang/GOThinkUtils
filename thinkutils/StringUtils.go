@@ -20,3 +20,11 @@ func (this stringutils) IsEmptyPtr(szTxt *string) bool {
 
 	return false
 }
+
+func (this stringutils) StringToBytes(szTxt string) []byte {
+	return []byte(szTxt)
+}
+
+func (this stringutils) BytesToString(byteTxt []byte) string {
+	return string(byteTxt)
+}
