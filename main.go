@@ -80,12 +80,18 @@ func main() {
 	fmt.Println("fxxk1")
 
 	logTest()
-	time.Sleep(10 * 10000)
 
 	log.Info(thinkutils.RandUtils.RandPasssword(8))
 	log.Info(thinkutils.RandUtils.UUID())
 	log.Info(thinkutils.MD5Utils.MD5String("HHH"))
 
-	szMd5, _ := thinkutils.MD5Utils.MD5File("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/GOThinkUtils")
+	szMd5 := thinkutils.MD5Utils.MD5File("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/GOThinkUtils")
 	log.Info(szMd5)
+
+	chRet := make(chan string)
+	go thinkutils.MD5Utils.MD5FileCor("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/GOThinkUtils", chRet)
+	a := <-chRet
+	log.Info(a)
+
+	time.Sleep(10 * 1000)
 }

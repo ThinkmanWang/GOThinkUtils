@@ -20,19 +20,42 @@ func (this md5utils) MD5String(szTxt string) string {
 	return strings.ToLower(hex.EncodeToString(h.Sum(nil)))
 }
 
-func (this md5utils) MD5File(filepath string) (string, error) {
+func (this md5utils) MD5File(filepath string) string {
 	f, err := os.Open(filepath)
 	if err != nil {
-		return "", err
+		return ""
 	}
 	defer f.Close()
 
 	body, err := ioutil.ReadAll(f)
 	if err != nil {
-		return "", err
+		return ""
 	}
 	md5 := fmt.Sprintf("%x", md5.Sum(body))
 	runtime.GC()
 
-	return strings.ToLower(strings.TrimSpace(md5)), nil
+	return strings.ToLower(strings.TrimSpace(md5))
+}
+
+func (this md5utils) MD5FileCor(filepath string, chRet chan string) {
+	f, err := os.Open(filepath)
+	if err != nil {
+		if chRet != nil {
+			chRet <- ""
+		}
+	}
+	defer f.Close()
+
+	body, err := ioutil.ReadAll(f)
+	if err != nil {
+		if chRet != nil {
+			chRet <- ""
+		}
+	}
+	md5 := fmt.Sprintf("%x", md5.Sum(body))
+	runtime.GC()
+
+	if chRet != nil {
+		chRet <- strings.ToLower(strings.TrimSpace(md5))
+	}
 }
