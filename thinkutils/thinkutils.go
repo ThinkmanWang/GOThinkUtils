@@ -1,5 +1,9 @@
 package thinkutils
 
+import "GOThinkUtils/thinkutils/logger"
+
+var log *logger.LocalLogger = logger.DefaultLogger()
+
 var DateTime datetime
 var StringUtils stringutils
 var RandUtils randutils

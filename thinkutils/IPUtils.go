@@ -1,6 +1,8 @@
 package thinkutils
 
-import "net"
+import (
+	"net"
+)
 
 type iputils struct {
 }
