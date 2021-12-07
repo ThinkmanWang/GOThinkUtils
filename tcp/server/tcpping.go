@@ -1,17 +1,19 @@
 package main
 
 import (
+	"GOThinkUtils/tcp/protocol"
+	"GOThinkUtils/thinkutils/logger"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	. "github.com/ecofast/rtl/netutils"
 	"github.com/ecofast/tcpsock"
-	. "github.com/ecofast/tcpsock/samples/tcpping/protocol"
 )
+
+var log *logger.LocalLogger = logger.DefaultLogger()
 
 var (
 	shutdown = make(chan bool, 1)
@@ -38,30 +40,30 @@ func main() {
 
 	fmt.Printf("tcpping listening on port: %d\n", listenPort)
 	server := tcpsock.NewTcpServer(listenPort, 2, onConnConnect, onConnClose, onProtocol)
-	log.Println("=====service start=====")
+	log.Info("=====service start=====")
 	go server.Serve()
 
 	<-shutdown
-	log.Println("shutdown server")
+	log.Info("shutdown server")
 	server.Close()
-	log.Println("=====service stop=====")
+	log.Info("=====service stop=====")
 }
 
 func onConnConnect(conn *tcpsock.TcpConn) {
-	log.Printf("accept connection from %s\n", IPFromNetAddr(conn.RawConn().RemoteAddr()))
+	log.Info("accept connection from %s\n", IPFromNetAddr(conn.RawConn().RemoteAddr()))
 }
 
 func onConnClose(conn *tcpsock.TcpConn) {
-	log.Printf("connection closed from %s\n", IPFromNetAddr(conn.RawConn().RemoteAddr()))
+	log.Info("connection closed from %s\n", IPFromNetAddr(conn.RawConn().RemoteAddr()))
 }
 
-func onMsg(conn *tcpsock.TcpConn, p *PingPacket) {
-	log.Printf("recved ping message from %s with %d bytes of data\n", IPFromNetAddr(conn.RawConn().RemoteAddr()), PacketHeadSize+p.BodyLen)
+func onMsg(conn *tcpsock.TcpConn, p *protocol.PingPacket) {
+	log.Info("recved ping message from %s with %d bytes of data\n", IPFromNetAddr(conn.RawConn().RemoteAddr()), protocol.PacketHeadSize+p.BodyLen)
 	conn.Write(p)
 }
 
 func onProtocol() tcpsock.Protocol {
-	proto := &PingProtocol{}
+	proto := &protocol.PingProtocol{}
 	proto.OnMessage(onMsg)
 	return proto
 }

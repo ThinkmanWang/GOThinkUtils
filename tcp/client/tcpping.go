@@ -1,9 +1,10 @@
 package main
 
 import (
+	"GOThinkUtils/tcp/protocol"
+	"GOThinkUtils/thinkutils/logger"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,8 +12,9 @@ import (
 
 	. "github.com/ecofast/rtl/netutils"
 	"github.com/ecofast/tcpsock"
-	. "github.com/ecofast/tcpsock/samples/tcpping/protocol"
 )
+
+var log *logger.LocalLogger = logger.DefaultLogger()
 
 type pingStats struct {
 	sendNum int
@@ -23,7 +25,7 @@ var (
 	shutdown = make(chan bool, 1)
 
 	tcpConn *tcpsock.TcpConn
-	packet  *PingPacket
+	packet  *protocol.PingPacket
 
 	packetLen    int = 32 // byte
 	pingInterval int = 1  // second
@@ -75,24 +77,24 @@ func main() {
 }
 
 func onProtocol() tcpsock.Protocol {
-	proto := &PingProtocol{}
+	proto := &protocol.PingProtocol{}
 	proto.OnMessage(onMsg)
 	return proto
 }
 
 func onConnect(c *tcpsock.TcpConn) {
-	log.Println("successfully connect to server", IPFromNetAddr(c.RawConn().RemoteAddr()))
+	log.Info("successfully connect to server", IPFromNetAddr(c.RawConn().RemoteAddr()))
 	tcpConn = c
 	fmt.Printf("TCPPing %s with %d bytes of data...\n", flag.Args()[0], packetLen)
 }
 
 func onClose(c *tcpsock.TcpConn) {
 	printStats()
-	log.Println("disconnect from server", IPFromNetAddr(c.RawConn().RemoteAddr()))
+	log.Info("disconnect from server", IPFromNetAddr(c.RawConn().RemoteAddr()))
 	tcpConn = nil
 }
 
-func onMsg(c *tcpsock.TcpConn, p *PingPacket) {
+func onMsg(c *tcpsock.TcpConn, p *protocol.PingPacket) {
 	canPing = true
 	lag := int(time.Now().Sub(sendTick) / time.Millisecond)
 	stats.lags = append(stats.lags, lag)
@@ -112,8 +114,8 @@ func parseFlag() {
 }
 
 func genPacket() {
-	packet = &PingPacket{
-		BodyLen: uint16(packetLen) - PacketHeadSize,
+	packet = &protocol.PingPacket{
+		BodyLen: uint32(packetLen) - protocol.PacketHeadSize,
 		Body:    make([]byte, packetLen),
 	}
 }
