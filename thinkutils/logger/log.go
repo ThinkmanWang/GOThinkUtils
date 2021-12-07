@@ -465,7 +465,7 @@ func stringTrim(s string, cut string) string {
 
 func DefaultLogger() *LocalLogger {
 	log := NewLogger()
-	log.SetLogger("file", `{"filename":"thinklog.log, "daily": true", "append": true, "maxlines": 1000000}`)
+	log.SetLogger("file", `{"filename":"thinklog.log", "daily": true, "append": true, "maxlines": 1000000}`)
 
 	return log
 }
