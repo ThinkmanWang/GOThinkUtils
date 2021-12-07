@@ -4,3 +4,5 @@ github.com/ecofast/rtl v0.0.0-20200709123611-d8ced2238cab h1:70Cc8WSOCdSeoLcbcZl
 github.com/ecofast/rtl v0.0.0-20200709123611-d8ced2238cab/go.mod h1:y9vx/VBBifeehxxY1qwLL3N8crc4Q+EBCepah1agRV0=
 github.com/ecofast/tcpsock v0.0.0-20180305073918-520f2b697dff h1:ttNMX3MAl3xo/VfzKZN1vXQ7fyEOYDyobVoSqJ2vkvA=
 github.com/ecofast/tcpsock v0.0.0-20180305073918-520f2b697dff/go.mod h1:z5l2wFHg8F5C+9LxJtxIk14951CFYuSfYKdphYpyE60=
+github.com/go-sql-driver/mysql v1.6.0 h1:BCTh4TKNUYmOmMUcQ3IipzF5prigylS7XXjEkfCHuOE=
+github.com/go-sql-driver/mysql v1.6.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LBy8hT2VhHyBg=
