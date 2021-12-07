@@ -7,7 +7,9 @@ import (
 	"strconv"
 )
 
-var log *logger.LocalLogger = logger.DefaultLogger()
+var (
+	log *logger.LocalLogger = logger.DefaultLogger()
+)
 
 func datetimeTest() {
 	fmt.Println(thinkutils.DateTime.Timestamp())

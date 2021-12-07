@@ -1,9 +1,7 @@
-package protocol
+package thinktcp
 
 import (
 	"encoding/binary"
-
-	"github.com/ecofast/tcpsock"
 )
 
 const (
@@ -32,12 +30,12 @@ func (self *PingPacket) Marshal() []byte {
 type PingProtocol struct {
 	recvBuf    []byte
 	recvBufLen int
-	onMsg      func(c *tcpsock.TcpConn, p *PingPacket)
+	onMsg      func(c *TcpConn, p *PingPacket)
 }
 
-func (self *PingProtocol) Parse(b []byte, recvChan chan<- tcpsock.Packet) {
+func (self *PingProtocol) Parse(b []byte, recvChan chan<- Packet) {
 	count := len(b)
-	if count+self.recvBufLen > tcpsock.RecvBufLenMax {
+	if count+self.recvBufLen > RecvBufLenMax {
 		return
 	}
 
@@ -51,7 +49,7 @@ func (self *PingProtocol) Parse(b []byte, recvChan chan<- tcpsock.Packet) {
 		pkt.BodyLen = binary.LittleEndian.Uint32(self.recvBuf[offsize+0 : offsize+PacketHeadSize])
 		offset += PacketHeadSize
 		pkglen := int(PacketHeadSize + pkt.BodyLen)
-		if pkglen >= tcpsock.RecvBufLenMax {
+		if pkglen >= RecvBufLenMax {
 			offsize = self.recvBufLen
 			break
 		}
@@ -71,11 +69,11 @@ func (self *PingProtocol) Parse(b []byte, recvChan chan<- tcpsock.Packet) {
 	}
 }
 
-func (self *PingProtocol) Process(conn *tcpsock.TcpConn, p tcpsock.Packet) {
+func (self *PingProtocol) Process(conn *TcpConn, p Packet) {
 	packet := p.(*PingPacket)
 	self.onMsg(conn, packet)
 }
 
-func (self *PingProtocol) OnMessage(fn func(c *tcpsock.TcpConn, p *PingPacket)) {
+func (self *PingProtocol) OnMessage(fn func(c *TcpConn, p *PingPacket)) {
 	self.onMsg = fn
 }

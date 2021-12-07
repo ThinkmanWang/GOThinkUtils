@@ -1,9 +1,9 @@
 package main
 
 import (
-	"GOThinkUtils/tcp/protocol"
 	"GOThinkUtils/thinkutils"
 	"GOThinkUtils/thinkutils/logger"
+	"GOThinkUtils/thinkutils/tcp"
 	"flag"
 	"fmt"
 	"os"
@@ -12,10 +12,7 @@ import (
 	"time"
 
 	. "github.com/ecofast/rtl/netutils"
-	"github.com/ecofast/tcpsock"
 )
-
-var log *logger.LocalLogger = logger.DefaultLogger()
 
 type pingStats struct {
 	sendNum int
@@ -23,10 +20,12 @@ type pingStats struct {
 }
 
 var (
+	log *logger.LocalLogger = logger.DefaultLogger()
+
 	shutdown = make(chan bool, 1)
 
-	tcpConn *tcpsock.TcpConn
-	packet  *protocol.PingPacket
+	tcpConn *thinktcp.TcpConn
+	packet  *thinktcp.PingPacket
 
 	packetLen    int = 32 // byte
 	pingInterval int = 1  // second
@@ -51,7 +50,7 @@ func main() {
 	parseFlag()
 	genPacket()
 
-	client := tcpsock.NewTcpClient(flag.Args()[0], onConnect, onClose, onProtocol)
+	client := thinktcp.NewTcpClient(flag.Args()[0], onConnect, onClose, onProtocol)
 	go client.Run()
 
 	ticker := time.NewTicker(time.Duration(pingInterval) * time.Second)
@@ -77,25 +76,25 @@ func main() {
 	client.Close()
 }
 
-func onProtocol() tcpsock.Protocol {
-	proto := &protocol.PingProtocol{}
+func onProtocol() thinktcp.Protocol {
+	proto := &thinktcp.PingProtocol{}
 	proto.OnMessage(onMsg)
 	return proto
 }
 
-func onConnect(c *tcpsock.TcpConn) {
+func onConnect(c *thinktcp.TcpConn) {
 	log.Info("successfully connect to server", IPFromNetAddr(c.RawConn().RemoteAddr()))
 	tcpConn = c
 	fmt.Printf("TCPPing %s with %d bytes of data...\n", flag.Args()[0], packetLen)
 }
 
-func onClose(c *tcpsock.TcpConn) {
+func onClose(c *thinktcp.TcpConn) {
 	printStats()
 	log.Info("disconnect from server", IPFromNetAddr(c.RawConn().RemoteAddr()))
 	tcpConn = nil
 }
 
-func onMsg(c *tcpsock.TcpConn, p *protocol.PingPacket) {
+func onMsg(c *thinktcp.TcpConn, p *thinktcp.PingPacket) {
 	canPing = true
 	lag := int(time.Now().Sub(sendTick) / time.Millisecond)
 	stats.lags = append(stats.lags, lag)
@@ -115,7 +114,7 @@ func parseFlag() {
 }
 
 func genPacket() {
-	packet = protocol.NewPingPacket(thinkutils.StringUtils.StringToBytes("012345678901234567890123456789012345678901234567890123456789"))
+	packet = thinktcp.NewPingPacket(thinkutils.StringUtils.StringToBytes("012345678901234567890123456789012345678901234567890123456789"))
 	//packet = &protocol.PingPacket{
 	//	BodyLen: uint32(packetLen) - protocol.PacketHeadSize,
 	//	Body:    make([]byte, packetLen),
