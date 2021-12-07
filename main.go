@@ -84,4 +84,5 @@ func main() {
 
 	log.Info(thinkutils.RandUtils.RandPasssword(8))
 	log.Info(thinkutils.RandUtils.UUID())
+	log.Info(thinkutils.MD5Utils.MD5String("HHH"))
 }
