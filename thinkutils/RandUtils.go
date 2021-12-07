@@ -1,7 +1,6 @@
 package thinkutils
 
 import (
-	"github.com/go-basic/uuid"
 	"math/rand"
 )
 
@@ -24,5 +23,5 @@ func (this randutils) RandPasssword(nLen int) string {
 }
 
 func (this randutils) UUID() string {
-	return uuid.New()
+	return UUIDUtils.New()
 }

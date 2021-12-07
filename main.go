@@ -69,7 +69,20 @@ func logTest() {
 	log.Info("FXXK")
 }
 
+func md5Test() {
+	log.Info(thinkutils.MD5Utils.MD5String("HHH"))
+
+	szMd5 := thinkutils.MD5Utils.MD5File("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/GOThinkUtils")
+	log.Info(szMd5)
+
+	chRet := make(chan string)
+	go thinkutils.MD5Utils.MD5FileCor("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/GOThinkUtils", chRet)
+	szMd5 = <-chRet
+	log.Info(szMd5)
+}
+
 func main() {
+	log.Info("%d", 123)
 	fmt.Println("Hello World")
 
 	//var logger *log.Logger = new(log.Logger)
@@ -83,15 +96,10 @@ func main() {
 
 	log.Info(thinkutils.RandUtils.RandPasssword(8))
 	log.Info(thinkutils.RandUtils.UUID())
-	log.Info(thinkutils.MD5Utils.MD5String("HHH"))
 
-	szMd5 := thinkutils.MD5Utils.MD5File("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/GOThinkUtils")
-	log.Info(szMd5)
+	md5Test()
 
-	chRet := make(chan string)
-	go thinkutils.MD5Utils.MD5FileCor("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/GOThinkUtils", chRet)
-	szMd5 = <-chRet
-	log.Info(szMd5)
+	log.Info(thinkutils.IPUtils.LocalIP())
 
 	time.Sleep(10 * 1000)
 }
