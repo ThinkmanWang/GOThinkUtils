@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	. "github.com/ecofast/rtl/netutils"
+	"github.com/ecofast/rtl/netutils"
 )
 
 type pingStats struct {
@@ -83,14 +83,14 @@ func onProtocol() thinktcp.Protocol {
 }
 
 func onConnect(c *thinktcp.TcpConn) {
-	log.Info("successfully connect to server", IPFromNetAddr(c.RawConn().RemoteAddr()))
+	log.Info("successfully connect to server", netutils.IPFromNetAddr(c.RawConn().RemoteAddr()))
 	tcpConn = c
 	fmt.Printf("TCPPing %s with %d bytes of data...\n", flag.Args()[0], packetLen)
 }
 
 func onClose(c *thinktcp.TcpConn) {
 	printStats()
-	log.Info("disconnect from server", IPFromNetAddr(c.RawConn().RemoteAddr()))
+	log.Info("disconnect from server", netutils.IPFromNetAddr(c.RawConn().RemoteAddr()))
 	tcpConn = nil
 }
 
@@ -98,7 +98,7 @@ func onMsg(c *thinktcp.TcpConn, p *thinktcp.PingPacket) {
 	canPing = true
 	lag := int(time.Now().Sub(sendTick) / time.Millisecond)
 	stats.lags = append(stats.lags, lag)
-	fmt.Printf("%d bytes from %s: time=%dms\n", p.BodyLen, IPFromNetAddr(c.RawConn().RemoteAddr()), lag)
+	fmt.Printf("%d bytes from %s: time=%dms\n", p.BodyLen, netutils.IPFromNetAddr(c.RawConn().RemoteAddr()), lag)
 }
 
 func parseFlag() {

@@ -3,9 +3,9 @@ package main
 import (
 	"GOThinkUtils/thinkutils"
 	"GOThinkUtils/thinkutils/logger"
-	thinktcp "GOThinkUtils/thinkutils/tcp"
+	"GOThinkUtils/thinkutils/tcp"
 	"fmt"
-	. "github.com/ecofast/rtl/netutils"
+	"github.com/ecofast/rtl/netutils"
 )
 
 var log *logger.LocalLogger = logger.DefaultLogger()
@@ -29,16 +29,16 @@ func main() {
 }
 
 func onConnConnect(conn *thinktcp.TcpConn) {
-	log.Info("accept connection from %s\n", IPFromNetAddr(conn.RawConn().RemoteAddr()))
+	log.Info("accept connection from %s\n", netutils.IPFromNetAddr(conn.RawConn().RemoteAddr()))
 }
 
 func onConnClose(conn *thinktcp.TcpConn) {
-	log.Info("connection closed from %s\n", IPFromNetAddr(conn.RawConn().RemoteAddr()))
+	log.Info("connection closed from %s\n", netutils.IPFromNetAddr(conn.RawConn().RemoteAddr()))
 }
 
 func onMsg(conn *thinktcp.TcpConn, p *thinktcp.PingPacket) {
 	szTxt := thinkutils.StringUtils.BytesToString(p.Body)
-	log.Info("recved ping message from %s with %d bytes of data: %s\n", IPFromNetAddr(conn.RawConn().RemoteAddr()), p.BodyLen, szTxt)
+	log.Info("recved ping message from %s with %d bytes of data: %s\n", netutils.IPFromNetAddr(conn.RawConn().RemoteAddr()), p.BodyLen, szTxt)
 	conn.Write(p)
 }
 
