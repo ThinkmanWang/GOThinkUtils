@@ -85,4 +85,7 @@ func main() {
 	log.Info(thinkutils.RandUtils.RandPasssword(8))
 	log.Info(thinkutils.RandUtils.UUID())
 	log.Info(thinkutils.MD5Utils.MD5String("HHH"))
+
+	szMd5, _ := thinkutils.MD5Utils.MD5File("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/GOThinkUtils")
+	log.Info(szMd5)
 }
