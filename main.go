@@ -4,6 +4,7 @@ import (
 	"GOThinkUtils/thinkutils"
 	"GOThinkUtils/thinkutils/logger"
 	"fmt"
+	"github.com/buger/jsonparser"
 	"strconv"
 	"time"
 )
@@ -81,6 +82,31 @@ func md5Test() {
 	log.Info(szMd5)
 }
 
+func jsonTest() {
+	data := []byte(`{
+	  "person": {
+		"name": {
+		  "first": "Leonid",
+		  "last": "Bugaev",
+		  "fullName": "Leonid Bugaev"
+		},
+		"github": {
+		  "handle": "buger",
+		  "followers": 109
+		},
+		"avatars": [
+		  { "url": "https://avatars1.githubusercontent.com/u/14009?v=3&s=460", "type": "thumbnail" }
+		]
+	  },
+	  "company": {
+		"name": "Acme"
+	  }
+	}`)
+
+	szTxt, _ := jsonparser.GetString(data, "person", "name", "fullName")
+	log.Info(szTxt)
+}
+
 func main() {
 	log.Info("%d", 123)
 	fmt.Println("Hello World")
@@ -100,6 +126,8 @@ func main() {
 	md5Test()
 
 	log.Info(thinkutils.IPUtils.LocalIP())
+
+	jsonTest()
 
 	time.Sleep(10 * 1000)
 }
