@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -84,6 +85,7 @@ type loginfo struct {
 	Path    string
 	Name    string
 	Content string
+	CorID   int
 }
 
 type nameLogger struct {
@@ -207,12 +209,23 @@ func (this *LocalLogger) writeToLoggers(when time.Time, msg *loginfo, level int)
 			continue
 		}
 
-		msgStr := when.Format(this.timeFormat) + " [" + msg.Level + "] " + "[" + msg.Path + "] " + msg.Content
+		msgStr := when.Format(this.timeFormat) + " [" + msg.Level + "] " + "[" + msg.Path + "](" + strconv.Itoa(msg.CorID) + ") " + msg.Content
 		err := l.LogWrite(when, msgStr, level)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to WriteMsg to adapter:%v,error:%v\n", l.name, err)
 		}
 	}
+}
+
+func (this *LocalLogger) goid() int {
+	var buf [64]byte
+	n := runtime.Stack(buf[:], false)
+	idField := strings.Fields(strings.TrimPrefix(string(buf[:n]), "goroutine "))[0]
+	id, err := strconv.Atoi(idField)
+	if err != nil {
+		panic(fmt.Sprintf("cannot get goroutine id: %v", err))
+	}
+	return id
 }
 
 func (this *LocalLogger) writeMsg(logLevel int, msg string, v ...interface{}) error {
@@ -241,6 +254,7 @@ func (this *LocalLogger) writeMsg(logLevel int, msg string, v ...interface{}) er
 	msgSt.Content = msg
 	msgSt.Name = this.appName
 	msgSt.Time = when.Format(this.timeFormat)
+	msgSt.CorID = this.goid()
 	this.writeToLoggers(when, msgSt, logLevel)
 
 	return nil

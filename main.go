@@ -5,7 +5,9 @@ import (
 	"GOThinkUtils/thinkutils/logger"
 	"fmt"
 	"github.com/buger/jsonparser"
+	"runtime"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -47,6 +49,7 @@ func datetimeTest() {
 }
 
 func cor1() {
+	log.Info("%d", goid())
 	time.Sleep(1000)
 	fmt.Println("FXXK")
 }
@@ -116,6 +119,17 @@ func jsonTest() {
 	}, "person", "avatars")
 }
 
+func goid() int {
+	var buf [64]byte
+	n := runtime.Stack(buf[:], false)
+	idField := strings.Fields(strings.TrimPrefix(string(buf[:n]), "goroutine "))[0]
+	id, err := strconv.Atoi(idField)
+	if err != nil {
+		panic(fmt.Sprintf("cannot get goroutine id: %v", err))
+	}
+	return id
+}
+
 func main() {
 	log.Info("%d", 123)
 	fmt.Println("Hello World")
@@ -137,6 +151,8 @@ func main() {
 	log.Info(thinkutils.IPUtils.LocalIP())
 
 	jsonTest()
+
+	log.Info("%d", goid())
 
 	time.Sleep(10 * 1000)
 }
