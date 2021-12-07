@@ -96,6 +96,7 @@ func jsonTest() {
 		},
 		"avatars": [
 		  { "url": "https://avatars1.githubusercontent.com/u/14009?v=3&s=460", "type": "thumbnail" }
+			, { "url": "https://avatars1.githubusercontent.com/u/14009?v=3&s=470", "type": "thumbnail" }
 		]
 	  },
 	  "company": {
