@@ -1,11 +1,14 @@
 package main
 
 import (
+	"GOThinkUtils/logger"
 	"GOThinkUtils/thinkutils"
 	"fmt"
-	"log"
 	"strconv"
+	"time"
 )
+
+var log *logger.LocalLogger = logger.DefaultLogger()
 
 func datetimeTest() {
 	fmt.Println(thinkutils.DateTime.Timestamp())
@@ -42,11 +45,40 @@ func datetimeTest() {
 	fmt.Println(thinkutils.DateTime.StartEndOfWeek("2021-12-16"))
 }
 
+func cor1() {
+	time.Sleep(1000)
+	fmt.Println("FXXK")
+}
+
+func cor2(chRet chan string) {
+	chRet <- "FXXXXXXXXXXXXXK"
+}
+
+func coTest() {
+	go cor1()
+
+	c := make(chan string)
+	go cor2(c)
+
+	szRet := <-c
+	fmt.Println(szRet)
+}
+
+func logTest() {
+	//logger.SetLogger(`{"Console": {"level": "DEBG"}`)
+	log.Info("FXXK")
+}
+
 func main() {
 	fmt.Println("Hello World")
 
 	//var logger *log.Logger = new(log.Logger)
-	log.Println("FXXK")
 
 	datetimeTest()
+
+	coTest()
+	fmt.Println("fxxk1")
+
+	logTest()
+	time.Sleep(10 * 10000)
 }
