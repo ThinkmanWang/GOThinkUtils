@@ -1,2 +1,6 @@
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
 github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx27UK13J/0=
+github.com/ecofast/rtl v0.0.0-20200709123611-d8ced2238cab h1:70Cc8WSOCdSeoLcbcZlXTlad+TNfH5UeSjRVhv71k6M=
+github.com/ecofast/rtl v0.0.0-20200709123611-d8ced2238cab/go.mod h1:y9vx/VBBifeehxxY1qwLL3N8crc4Q+EBCepah1agRV0=
+github.com/ecofast/tcpsock v0.0.0-20180305073918-520f2b697dff h1:ttNMX3MAl3xo/VfzKZN1vXQ7fyEOYDyobVoSqJ2vkvA=
+github.com/ecofast/tcpsock v0.0.0-20180305073918-520f2b697dff/go.mod h1:z5l2wFHg8F5C+9LxJtxIk14951CFYuSfYKdphYpyE60=
