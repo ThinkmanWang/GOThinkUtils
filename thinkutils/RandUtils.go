@@ -12,7 +12,7 @@ func (this randutils) RandInt(nMin int, nMax int) int {
 }
 
 func (this randutils) RandPasssword(nLen int) string {
-	szBase := "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz012345678"
+	szBase := "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz0123456789"
 	szRet := ""
 	for i := 0; i < nLen; i++ {
 		ch := szBase[this.RandInt(0, len(szBase))]
