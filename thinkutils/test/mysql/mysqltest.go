@@ -24,5 +24,8 @@ func basicQueryJSON() {
 }
 
 func main() {
-	basicQueryJSON()
+	for i := 0; i < 100; i++ {
+		basicQueryJSON()
+	}
+	//basicQueryJSON()
 }
