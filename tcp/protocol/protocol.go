@@ -7,24 +7,24 @@ import (
 )
 
 const (
-	PacketHeadSize = 2
+	PacketHeadSize = 4
 )
 
 type PingPacket struct {
-	BodyLen uint16
+	BodyLen uint32
 	Body    []byte
 }
 
 func NewPingPacket(body []byte) *PingPacket {
 	return &PingPacket{
-		BodyLen: uint16(len(body)),
+		BodyLen: uint32(len(body)),
 		Body:    body,
 	}
 }
 
 func (self *PingPacket) Marshal() []byte {
 	buf := make([]byte, PacketHeadSize+self.BodyLen)
-	binary.LittleEndian.PutUint16(buf, self.BodyLen)
+	binary.LittleEndian.PutUint32(buf, self.BodyLen)
 	copy(buf[PacketHeadSize:], self.Body[:])
 	return buf
 }
@@ -46,11 +46,11 @@ func (self *PingProtocol) Parse(b []byte, recvChan chan<- tcpsock.Packet) {
 	offsize := 0
 	offset := 0
 	var pkt PingPacket
-	for self.recvBufLen-offsize > 2 {
+	for self.recvBufLen-offsize > PacketHeadSize {
 		offset = 0
-		pkt.BodyLen = binary.LittleEndian.Uint16(self.recvBuf[offsize+0 : offsize+2])
-		offset += 2
-		pkglen := int(2 + pkt.BodyLen)
+		pkt.BodyLen = binary.LittleEndian.Uint32(self.recvBuf[offsize+0 : offsize+PacketHeadSize])
+		offset += PacketHeadSize
+		pkglen := int(PacketHeadSize + pkt.BodyLen)
 		if pkglen >= tcpsock.RecvBufLenMax {
 			offsize = self.recvBufLen
 			break
