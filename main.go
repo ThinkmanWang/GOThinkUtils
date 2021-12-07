@@ -83,4 +83,5 @@ func main() {
 	time.Sleep(10 * 10000)
 
 	log.Info(thinkutils.RandUtils.RandPasssword(8))
+	log.Info(thinkutils.RandUtils.UUID())
 }
