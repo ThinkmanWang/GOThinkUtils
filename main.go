@@ -90,8 +90,8 @@ func main() {
 
 	chRet := make(chan string)
 	go thinkutils.MD5Utils.MD5FileCor("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/GOThinkUtils", chRet)
-	a := <-chRet
-	log.Info(a)
+	szMd5 = <-chRet
+	log.Info(szMd5)
 
 	time.Sleep(10 * 1000)
 }
