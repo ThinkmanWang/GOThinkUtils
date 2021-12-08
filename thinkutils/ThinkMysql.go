@@ -11,8 +11,8 @@ import (
 )
 
 type thinkmysql struct {
-	m_lock    sync.Mutex
-	m_mapConn map[string]*sql.DB
+	m_lock  sync.Mutex
+	m_mapDB map[string]*sql.DB
 }
 
 func (this thinkmysql) Conn(szHost string,
@@ -21,16 +21,18 @@ func (this thinkmysql) Conn(szHost string,
 	szPwd string,
 	szDb string,
 	nMaxConn int) *sql.DB {
-	defer func() {
-		this.m_lock.Unlock()
-	}()
+	defer this.m_lock.Unlock()
 	this.m_lock.Lock()
 
 	//id:password@tcp(your-amazonaws-uri.com:3306)/dbname
 	szConn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", szUser, szPwd, szHost, nPort, szDb)
 	//szConn := fmt.Sprintf("%s:%s@%s:%d/%s", szUser, szPwd, szHost, nPort, szDb)
 
-	pDb := this.m_mapConn[szConn]
+	if nil == this.m_mapDB {
+		this.m_mapDB = make(map[string]*sql.DB)
+	}
+
+	pDb := this.m_mapDB[szConn]
 	if pDb != nil {
 		return pDb
 	}
@@ -44,10 +46,7 @@ func (this thinkmysql) Conn(szHost string,
 	db.SetMaxOpenConns(nMaxConn)
 	db.SetMaxIdleConns(2)
 
-	if nil == this.m_mapConn {
-		this.m_mapConn = make(map[string]*sql.DB)
-	}
-	this.m_mapConn[szConn] = db
+	this.m_mapDB[szConn] = db
 
 	return db
 }

@@ -154,5 +154,8 @@ func main() {
 
 	log.Info("%d", goid())
 
+	defer log.Info("RUN LAST")
+	log.Info("RUN BEFORE")
+
 	time.Sleep(10 * 1000)
 }
