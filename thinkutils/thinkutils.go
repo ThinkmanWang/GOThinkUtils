@@ -12,3 +12,4 @@ var IPUtils iputils
 var UUIDUtils uuidutils
 var ThinkMysql thinkmysql
 var ThinkRedis thinkredis
+var FileUtils fileutils
