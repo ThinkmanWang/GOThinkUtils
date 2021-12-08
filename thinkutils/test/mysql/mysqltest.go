@@ -14,7 +14,7 @@ var (
 func basicQueryJSON(wg *sync.WaitGroup) {
 	db := thinkutils.ThinkMysql.QuickConn()
 
-	rows, err := db.Query("SELECT * FROM sys_user")
+	rows, err := db.Query("SELECT * FROM sys_user WHERE user_id > ?", 0)
 	if err != nil {
 		return
 	}
