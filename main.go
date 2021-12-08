@@ -157,5 +157,12 @@ func main() {
 	defer log.Info("RUN LAST")
 	log.Info("RUN BEFORE")
 
+	log.Info("%t", thinkutils.RegularUtils.IsPhone("123"))
+	log.Info("%t", thinkutils.RegularUtils.IsPhone("18621675203"))
+	log.Info("%t", thinkutils.RegularUtils.IsEmail("wangxf1985@gmail.com"))
+	log.Info("%t", thinkutils.RegularUtils.IsEmail("wangxf1985@gmailcom"))
+	log.Info("%t", thinkutils.RegularUtils.IsEmail("wangxf1985gmail.com"))
+	log.Info("%t", thinkutils.RegularUtils.IsEmail("wangxf1985@gmail.net"))
+
 	time.Sleep(10 * 1000)
 }
