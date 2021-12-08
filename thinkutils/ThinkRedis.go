@@ -58,7 +58,7 @@ func (this thinkredis) Conn(szHost string,
 		rdb = this.makeConn(szHost, nPort, szPwd, nDb, nMaxConn)
 	}
 
-	log.Info("%p %p", g_mapRedisConn, rdb)
+	//log.Info("%p %p", g_mapRedisConn, rdb)
 	return rdb
 }
 

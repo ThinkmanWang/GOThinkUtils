@@ -67,7 +67,7 @@ func (this thinkmysql) Conn(szHost string,
 		pDb = this.makeConn(szHost, nPort, szUser, szPwd, szDb, nMaxConn)
 	}
 
-	log.Info("%p %p", g_mapMysqlDB, pDb)
+	//log.Info("%p %p", g_mapMysqlDB, pDb)
 	return pDb
 }
 
