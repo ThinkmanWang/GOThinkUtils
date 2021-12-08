@@ -14,3 +14,4 @@ var ThinkMysql thinkmysql
 var ThinkRedis thinkredis
 var FileUtils fileutils
 var RegularUtils regulartils
+var JSONUtils jsonutils
