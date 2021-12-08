@@ -2,12 +2,19 @@ package thinkutils
 
 import (
 	"context"
+	"fmt"
 	"github.com/segmentio/kafka-go"
 	"strings"
+	"sync"
 )
 
 type kafkautils struct {
 }
+
+var (
+	g_lock    sync.Mutex
+	g_mapConn map[string]*kafka.Writer
+)
 
 type OnMsgCallback func(message kafka.Message)
 
@@ -40,20 +47,34 @@ func (this kafkautils) StartConsumer(szUrl string, szTopic string, szGroupId str
 }
 
 func (this kafkautils) SendMsg(szUrl string, szTopic string, data []byte) {
-	//brokers := strings.Split(kafkaURL, ",")
-	writer := &kafka.Writer{
-		Addr:     kafka.TCP(szUrl),
-		Topic:    szTopic,
-		Balancer: &kafka.LeastBytes{},
+	defer g_lock.Unlock()
+	g_lock.Lock()
+
+	if nil == g_mapConn {
+		g_mapConn = make(map[string]*kafka.Writer)
 	}
-	defer writer.Close()
+
+	szConn := fmt.Sprintf("%s/%s", szUrl, szTopic)
+	pWriter := g_mapConn[szConn]
+	if nil == pWriter {
+		//brokers := strings.Split(kafkaURL, ",")
+		pWriter = &kafka.Writer{
+			Addr:     kafka.TCP(szUrl),
+			Topic:    szTopic,
+			Balancer: &kafka.LeastBytes{},
+		}
+
+		g_mapConn[szConn] = pWriter
+		//defer writer.Close()
+	}
 
 	msg := kafka.Message{
 		Key:   []byte("1"),
 		Value: data,
 	}
 
-	err := writer.WriteMessages(context.Background(), msg)
+	log.Info("%p %p", g_mapConn, pWriter)
+	err := pWriter.WriteMessages(context.Background(), msg)
 	if err != nil {
 		log.Error(err.Error())
 	}
