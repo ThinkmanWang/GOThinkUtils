@@ -154,7 +154,8 @@ func main() {
 
 	log.Info("%d", goid())
 
-	defer log.Info("RUN LAST")
+	defer log.Info("RUN LAST2")
+	defer log.Info("RUN LAST1")
 	log.Info("RUN BEFORE")
 
 	log.Info("%t", thinkutils.RegularUtils.IsPhone("123"))
