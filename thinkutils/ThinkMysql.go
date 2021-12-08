@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"gopkg.in/ini.v1"
 	"strings"
 	"sync"
 	"time"
@@ -52,7 +53,17 @@ func (this thinkmysql) Conn(szHost string,
 }
 
 func (this thinkmysql) QuickConn() *sql.DB {
-	return this.Conn("172.16.0.2", 3306, "root", "Ab123145", "db_ruoyi_vue", 16)
+	cfg, err := ini.Load("app.ini")
+	if err != nil {
+		return this.Conn("127.0.0.1", 3306, "root", "123456", "db1", 16)
+	}
+
+	return this.Conn(cfg.Section("mysql").Key("host").String(),
+		cfg.Section("mysql").Key("port").MustInt(),
+		cfg.Section("mysql").Key("user").String(),
+		cfg.Section("mysql").Key("password").String(),
+		cfg.Section("mysql").Key("db").String(),
+		cfg.Section("mysql").Key("max_conn").MustInt())
 }
 
 func (this thinkmysql) ToJSON(rows *sql.Rows) string {

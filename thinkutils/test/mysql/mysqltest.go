@@ -27,6 +27,7 @@ var (
 	fmt.Println(count)
 */
 func basicQueryJSON(wg *sync.WaitGroup) {
+
 	db := thinkutils.ThinkMysql.QuickConn()
 
 	rows, err := db.Query(`
@@ -40,10 +41,13 @@ func basicQueryJSON(wg *sync.WaitGroup) {
 		return
 	}
 
+	defer rows.Close()
+	defer wg.Done()
+
 	szRet := thinkutils.ThinkMysql.ToJSON(rows)
 	fmt.Println(szRet)
 	wg.Done()
-	defer rows.Close()
+
 }
 
 func main() {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"gopkg.in/ini.v1"
 	"sync"
 	"time"
 )
@@ -44,7 +45,16 @@ func (this thinkredis) Conn(szHost string,
 }
 
 func (this thinkredis) QuickConn() *redis.Client {
-	return this.Conn("172.16.0.2", 6379, "Ab123145", 0, 32)
+	cfg, err := ini.Load("app.ini")
+	if err != nil {
+		return this.Conn("127.0.0.1", 6379, "123456", 0, 32)
+	}
+
+	return this.Conn(cfg.Section("redis").Key("host").String(),
+		cfg.Section("redis").Key("port").MustInt(),
+		cfg.Section("redis").Key("password").String(),
+		cfg.Section("redis").Key("db").MustInt(),
+		cfg.Section("redis").Key("max_conn").MustInt())
 }
 
 func (this thinkredis) Lock(rDB *redis.Client, szName string, nAcquireTimeout int32, nLockTimeout int32) string {
