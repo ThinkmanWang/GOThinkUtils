@@ -50,6 +50,4 @@ func main() {
 	go lockTest(&wg)
 
 	wg.Wait()
-	//time.Sleep(10 * time.Second)
-	//basicQueryJSON()
 }
