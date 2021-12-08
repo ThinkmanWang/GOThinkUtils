@@ -15,3 +15,4 @@ var ThinkRedis thinkredis
 var FileUtils fileutils
 var RegularUtils regulartils
 var JSONUtils jsonutils
+var KafkaUtils kafkautils
