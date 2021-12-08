@@ -11,8 +11,8 @@ var (
 )
 
 type User struct {
-	Name string
-	Age  uint8
+	Name string `json:"name"`
+	Age  uint8  `json:"age"`
 }
 
 type AjaxResult struct {
@@ -24,7 +24,7 @@ type AjaxResult struct {
 func jsonObject() {
 	user := User{Name: "aaa", Age: 100}
 
-	log.Info(thinkutils.JSONUtils.ToJson(user))
+	log.Info(thinkutils.JSONUtils.ToJson(&user))
 }
 
 func jsonArray() {
@@ -33,7 +33,7 @@ func jsonArray() {
 }
 
 func fromjson() {
-	szJson := `{"Name":"aaa","Age":100}`
+	szJson := `{"name":"aaa","age":100}`
 	var user User
 	err := thinkutils.JSONUtils.FromJson(szJson, &user)
 	if err != nil {
@@ -42,7 +42,7 @@ func fromjson() {
 }
 
 func parseAjaxResult() {
-	szJson := `{"code": 200, "msg":"success", "data": [{"Name":"a","Age":1},{"Name":"b","Age":2}]}`
+	szJson := `{"code": 200, "msg":"success", "data": [{"name":"a","age":1},{"name":"b","age":2}]}`
 	var ajaxRet AjaxResult
 	err := thinkutils.JSONUtils.FromJson(szJson, &ajaxRet)
 	if err != nil {
