@@ -10,7 +10,7 @@ var (
 )
 
 func main() {
-	thinkutils.FileUtils.ReadLine("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/test.txt", func(szLine string) {
-		log.Info(szLine)
+	thinkutils.FileUtils.ReadLine("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/test.txt", func(nLine uint32, szLine string) {
+		log.Info("%d %s", nLine, szLine)
 	})
 }

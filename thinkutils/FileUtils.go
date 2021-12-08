@@ -8,7 +8,7 @@ import (
 type fileutils struct {
 }
 
-type OnReadLineCallback func(szLine string)
+type OnReadLineCallback func(nLine uint32, szLine string)
 
 func (this fileutils) ReadLine(szPath string, callback OnReadLineCallback) {
 	inFile, err := os.Open(szPath)
@@ -19,10 +19,12 @@ func (this fileutils) ReadLine(szPath string, callback OnReadLineCallback) {
 	defer inFile.Close()
 
 	scanner := bufio.NewScanner(inFile)
+	var nLine uint32 = 0
 	for scanner.Scan() {
 		if callback != nil {
-			callback(scanner.Text())
+			callback(nLine, scanner.Text())
 		}
+		nLine++
 		//fmt.Println(scanner.Text()) // the line
 	}
 }
