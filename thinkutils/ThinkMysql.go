@@ -12,8 +12,39 @@ import (
 )
 
 type thinkmysql struct {
-	m_lock  sync.Mutex
-	m_mapDB map[string]*sql.DB
+}
+
+var (
+	g_lockMysql  sync.Mutex
+	g_mapMysqlDB map[string]*sql.DB
+)
+
+func (this thinkmysql) makeConn(szHost string,
+	nPort int,
+	szUser string,
+	szPwd string,
+	szDb string,
+	nMaxConn int) *sql.DB {
+	defer g_lockMysql.Unlock()
+	g_lockMysql.Lock()
+
+	szConn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", szUser, szPwd, szHost, nPort, szDb)
+	db := g_mapMysqlDB[szConn]
+	if nil == db {
+		_db, err := sql.Open("mysql", szConn)
+		if err != nil {
+			return nil
+		}
+
+		_db.SetConnMaxLifetime(time.Minute * 3)
+		_db.SetMaxOpenConns(nMaxConn)
+		_db.SetMaxIdleConns(2)
+
+		g_mapMysqlDB[szConn] = _db
+		db = _db
+	}
+
+	return db
 }
 
 func (this thinkmysql) Conn(szHost string,
@@ -22,34 +53,22 @@ func (this thinkmysql) Conn(szHost string,
 	szPwd string,
 	szDb string,
 	nMaxConn int) *sql.DB {
-	defer this.m_lock.Unlock()
-	this.m_lock.Lock()
 
 	//id:password@tcp(your-amazonaws-uri.com:3306)/dbname
 	szConn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", szUser, szPwd, szHost, nPort, szDb)
 	//szConn := fmt.Sprintf("%s:%s@%s:%d/%s", szUser, szPwd, szHost, nPort, szDb)
 
-	if nil == this.m_mapDB {
-		this.m_mapDB = make(map[string]*sql.DB)
+	if nil == g_mapMysqlDB {
+		g_mapMysqlDB = make(map[string]*sql.DB)
 	}
 
-	pDb := this.m_mapDB[szConn]
-	if pDb != nil {
-		return pDb
+	pDb := g_mapMysqlDB[szConn]
+	if nil == pDb {
+		pDb = this.makeConn(szHost, nPort, szUser, szPwd, szDb, nMaxConn)
 	}
 
-	db, err := sql.Open("mysql", szConn)
-	if err != nil {
-		return nil
-	}
-
-	db.SetConnMaxLifetime(time.Minute * 3)
-	db.SetMaxOpenConns(nMaxConn)
-	db.SetMaxIdleConns(2)
-
-	this.m_mapDB[szConn] = db
-
-	return db
+	log.Info("%p %p", g_mapMysqlDB, pDb)
+	return pDb
 }
 
 func (this thinkmysql) QuickConn() *sql.DB {

@@ -12,8 +12,8 @@ type kafkautils struct {
 }
 
 var (
-	g_lock    sync.Mutex
-	g_mapConn map[string]*kafka.Writer
+	g_lockKafka      sync.Mutex
+	g_mapKafkaWriter map[string]*kafka.Writer
 )
 
 type OnMsgCallback func(message kafka.Message)
@@ -46,16 +46,13 @@ func (this kafkautils) StartConsumer(szUrl string, szTopic string, szGroupId str
 	}()
 }
 
-func (this kafkautils) SendMsg(szUrl string, szTopic string, data []byte) {
-	defer g_lock.Unlock()
-	g_lock.Lock()
-
-	if nil == g_mapConn {
-		g_mapConn = make(map[string]*kafka.Writer)
-	}
+func (this kafkautils) makeWriter(szUrl string, szTopic string) *kafka.Writer {
+	defer g_lockKafka.Unlock()
+	g_lockKafka.Lock()
 
 	szConn := fmt.Sprintf("%s/%s", szUrl, szTopic)
-	pWriter := g_mapConn[szConn]
+
+	pWriter := g_mapKafkaWriter[szConn]
 	if nil == pWriter {
 		//brokers := strings.Split(kafkaURL, ",")
 		pWriter = &kafka.Writer{
@@ -64,8 +61,22 @@ func (this kafkautils) SendMsg(szUrl string, szTopic string, data []byte) {
 			Balancer: &kafka.LeastBytes{},
 		}
 
-		g_mapConn[szConn] = pWriter
+		g_mapKafkaWriter[szConn] = pWriter
 		//defer writer.Close()
+	}
+
+	return pWriter
+}
+
+func (this kafkautils) SendMsg(szUrl string, szTopic string, data []byte) {
+	if nil == g_mapKafkaWriter {
+		g_mapKafkaWriter = make(map[string]*kafka.Writer)
+	}
+
+	szConn := fmt.Sprintf("%s/%s", szUrl, szTopic)
+	pWriter := g_mapKafkaWriter[szConn]
+	if nil == pWriter {
+		pWriter = this.makeWriter(szUrl, szTopic)
 	}
 
 	msg := kafka.Message{
@@ -73,7 +84,7 @@ func (this kafkautils) SendMsg(szUrl string, szTopic string, data []byte) {
 		Value: data,
 	}
 
-	log.Info("%p %p", g_mapConn, pWriter)
+	//log.Info("%p %p", g_mapKafkaWriter, pWriter)
 	err := pWriter.WriteMessages(context.Background(), msg)
 	if err != nil {
 		log.Error(err.Error())

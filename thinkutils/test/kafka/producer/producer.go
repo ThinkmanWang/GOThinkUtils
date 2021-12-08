@@ -20,12 +20,12 @@ func main() {
 	for {
 		nIndex++
 		szMsg := fmt.Sprintf("[%d] %s", nIndex, thinkutils.DateTime.CurDatetime())
-		thinkutils.KafkaUtils.SendMsg("172.16.0.2:9092",
+		go thinkutils.KafkaUtils.SendMsg("172.16.0.2:9092",
 			"think-topic",
 			[]byte(szMsg))
 
 		log.Info("Send %s", szMsg)
-		time.Sleep(time.Duration(10) * time.Microsecond)
+		time.Sleep(time.Duration(500) * time.Microsecond)
 	}
 
 	wg.Wait()

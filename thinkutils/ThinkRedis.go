@@ -10,8 +10,36 @@ import (
 )
 
 type thinkredis struct {
-	m_lock    sync.Mutex
-	m_mapConn map[string]*redis.Client
+}
+
+var (
+	g_lockRedis    sync.Mutex
+	g_mapRedisConn map[string]*redis.Client
+)
+
+func (this thinkredis) makeConn(szHost string,
+	nPort int,
+	szPwd string,
+	nDb int,
+	nMaxConn int) *redis.Client {
+	defer g_lockRedis.Unlock()
+	g_lockRedis.Lock()
+
+	szKey := fmt.Sprintf("%s@(%s:%d)/%d", szPwd, szHost, nPort, nDb)
+	rdb := g_mapRedisConn[szKey]
+	if nil == rdb {
+		rdb = redis.NewClient(&redis.Options{
+			Addr:         fmt.Sprintf("%s:%d", szHost, nPort),
+			Password:     szPwd,
+			DB:           nDb,
+			MinIdleConns: 2,
+			PoolSize:     nMaxConn,
+		})
+
+		g_mapRedisConn[szKey] = rdb
+	}
+
+	return rdb
 }
 
 func (this thinkredis) Conn(szHost string,
@@ -19,28 +47,18 @@ func (this thinkredis) Conn(szHost string,
 	szPwd string,
 	nDb int,
 	nMaxConn int) *redis.Client {
-	defer this.m_lock.Unlock()
-	this.m_lock.Lock()
 
-	if nil == this.m_mapConn {
-		this.m_mapConn = make(map[string]*redis.Client)
+	if nil == g_mapRedisConn {
+		g_mapRedisConn = make(map[string]*redis.Client)
 	}
 
 	szKey := fmt.Sprintf("%s@(%s:%d)/%d", szPwd, szHost, nPort, nDb)
-	rdb := this.m_mapConn[szKey]
-	if rdb != nil {
-		return rdb
+	rdb := g_mapRedisConn[szKey]
+	if nil == rdb {
+		rdb = this.makeConn(szHost, nPort, szPwd, nDb, nMaxConn)
 	}
 
-	rdb = redis.NewClient(&redis.Options{
-		Addr:         fmt.Sprintf("%s:%d", szHost, nPort),
-		Password:     szPwd,
-		DB:           nDb,
-		MinIdleConns: 2,
-		PoolSize:     nMaxConn,
-	})
-
-	this.m_mapConn[szKey] = rdb
+	log.Info("%p %p", g_mapRedisConn, rdb)
 	return rdb
 }
 
