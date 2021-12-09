@@ -17,6 +17,5 @@ var (
 	RegularUtils regulartils
 	JSONUtils    jsonutils
 	KafkaUtils   kafkautils
+	UDPUtils     udputils
 )
-
-

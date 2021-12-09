@@ -4,6 +4,29 @@ import (
 	"net"
 )
 
+type udputils struct {
+}
+
+func (this udputils) Send(szIP string, nPort int, data []byte) {
+	ip := net.ParseIP(szIP)
+
+	srcAddr := &net.UDPAddr{IP: []byte{0, 0, 0, 0}, Port: 0}
+	dstAddr := &net.UDPAddr{IP: ip, Port: nPort}
+
+	conn, err := net.DialUDP("udp", srcAddr, dstAddr)
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+
+	nRet, err := conn.Write(data)
+	if err != nil {
+		return
+	}
+
+	log.Info("%d", nRet)
+}
+
 type OnUDPMsgCallback func(addr net.Addr, data []byte)
 type UDPServer struct {
 	OnMsg OnUDPMsgCallback
@@ -29,7 +52,7 @@ func (this *UDPServer) StartEx(nPort int, bufSize uint32) {
 		}
 
 		if nil != this.OnMsg {
-			this.OnMsg(remoteAddr, data)
+			go this.OnMsg(remoteAddr, data)
 		}
 		//log.Info("<%s> %s", remoteAddr, data[:n])
 	}
