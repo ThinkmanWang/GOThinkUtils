@@ -1,14 +1,26 @@
 package thinkutils
 
 import (
+	"fmt"
 	"net"
+	"sync"
 )
 
 type udputils struct {
 }
 
-func (this udputils) Send(szIP string, nPort int, data []byte) {
-	go func() {
+var (
+	g_lockUDPClient sync.Mutex
+	g_mapUDPClient  map[string]*net.UDPConn
+)
+
+func (this udputils) makeUDPClient(szIP string, nPort int) *net.UDPConn {
+	defer g_lockUDPClient.Unlock()
+	g_lockUDPClient.Lock()
+
+	szConn := fmt.Sprintf("%s:%d", szIP, nPort)
+	pConn := g_mapUDPClient[szConn]
+	if nil == pConn {
 		ip := net.ParseIP(szIP)
 
 		srcAddr := &net.UDPAddr{IP: []byte{0, 0, 0, 0}, Port: 0}
@@ -16,16 +28,39 @@ func (this udputils) Send(szIP string, nPort int, data []byte) {
 
 		conn, err := net.DialUDP("udp", srcAddr, dstAddr)
 		if err != nil {
+			return nil
+		}
+
+		pConn = conn
+		g_mapUDPClient[szConn] = pConn
+	}
+
+	return pConn
+}
+
+func (this udputils) Send(szIP string, nPort int, data []byte) {
+	go func() {
+		if nil == g_mapUDPClient {
+			g_mapUDPClient = make(map[string]*net.UDPConn)
+		}
+
+		szConn := fmt.Sprintf("%s:%d", szIP, nPort)
+		pConn := g_mapUDPClient[szConn]
+		if nil == pConn {
+			pConn = this.makeUDPClient(szIP, nPort)
+		}
+
+		if nil == pConn {
 			return
 		}
-		defer conn.Close()
 
-		_, err = conn.Write(data)
+		log.Info("%p", pConn)
+		_, err := pConn.Write(data)
 		if err != nil {
+			pConn.Close()
+			delete(g_mapUDPClient, szConn)
 			return
 		}
-
-		//log.Info("%d", nRet)
 	}()
 
 }
