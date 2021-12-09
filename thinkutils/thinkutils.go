@@ -2,17 +2,21 @@ package thinkutils
 
 import "GOThinkUtils/thinkutils/logger"
 
-var log *logger.LocalLogger = logger.DefaultLogger()
+var (
+	log *logger.LocalLogger = logger.DefaultLogger()
 
-var DateTime datetime
-var StringUtils stringutils
-var RandUtils randutils
-var MD5Utils md5utils
-var IPUtils iputils
-var UUIDUtils uuidutils
-var ThinkMysql thinkmysql
-var ThinkRedis thinkredis
-var FileUtils fileutils
-var RegularUtils regulartils
-var JSONUtils jsonutils
-var KafkaUtils kafkautils
+	DateTime     datetime
+	StringUtils  stringutils
+	RandUtils    randutils
+	MD5Utils     md5utils
+	IPUtils      iputils
+	UUIDUtils    uuidutils
+	ThinkMysql   thinkmysql
+	ThinkRedis   thinkredis
+	FileUtils    fileutils
+	RegularUtils regulartils
+	JSONUtils    jsonutils
+	KafkaUtils   kafkautils
+)
+
+
