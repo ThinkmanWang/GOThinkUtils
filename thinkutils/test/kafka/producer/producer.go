@@ -4,7 +4,6 @@ import (
 	"GOThinkUtils/thinkutils"
 	"GOThinkUtils/thinkutils/logger"
 	"fmt"
-	"sync"
 	"time"
 )
 
@@ -13,14 +12,12 @@ var (
 )
 
 func main() {
-	wg := sync.WaitGroup{}
-	wg.Add(1)
 
 	nIndex := 0
-	for {
+	for i := 0; i < 10; i++ {
 		nIndex++
 		szMsg := fmt.Sprintf("[%d] %s", nIndex, thinkutils.DateTime.CurDatetime())
-		go thinkutils.KafkaUtils.SendMsg("172.16.0.2:9092",
+		thinkutils.KafkaUtils.SendMsg("172.16.0.2:9092",
 			"think-topic",
 			[]byte(szMsg))
 
@@ -28,5 +25,5 @@ func main() {
 		time.Sleep(time.Duration(500) * time.Millisecond)
 	}
 
-	wg.Wait()
+	time.Sleep(10 * time.Second)
 }

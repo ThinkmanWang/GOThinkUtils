@@ -6,6 +6,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"strings"
 	"sync"
+	"time"
 )
 
 type kafkautils struct {
@@ -25,8 +26,9 @@ func (this kafkautils) StartConsumer(szUrl string, szTopic string, szGroupId str
 			Brokers:  brokers,
 			GroupID:  szGroupId,
 			Topic:    szTopic,
-			MinBytes: 10e3, // 10KB
+			MinBytes: 1,    // 10KB
 			MaxBytes: 10e6, // 10MB
+			MaxWait:  1 * time.Second,
 		})
 
 		defer reader.Close()
@@ -69,24 +71,27 @@ func (this kafkautils) makeWriter(szUrl string, szTopic string) *kafka.Writer {
 }
 
 func (this kafkautils) SendMsg(szUrl string, szTopic string, data []byte) {
-	if nil == g_mapKafkaWriter {
-		g_mapKafkaWriter = make(map[string]*kafka.Writer)
-	}
+	go func() {
+		if nil == g_mapKafkaWriter {
+			g_mapKafkaWriter = make(map[string]*kafka.Writer)
+		}
 
-	szConn := fmt.Sprintf("%s/%s", szUrl, szTopic)
-	pWriter := g_mapKafkaWriter[szConn]
-	if nil == pWriter {
-		pWriter = this.makeWriter(szUrl, szTopic)
-	}
+		szConn := fmt.Sprintf("%s/%s", szUrl, szTopic)
+		pWriter := g_mapKafkaWriter[szConn]
+		if nil == pWriter {
+			pWriter = this.makeWriter(szUrl, szTopic)
+		}
 
-	msg := kafka.Message{
-		//Key:   []byte("1"),
-		Value: data,
-	}
+		msg := kafka.Message{
+			//Key:   []byte("1"),
+			Value: data,
+		}
 
-	//log.Info("%p %p", g_mapKafkaWriter, pWriter)
-	err := pWriter.WriteMessages(context.Background(), msg)
-	if err != nil {
-		log.Error(err.Error())
-	}
+		//log.Info("%p %p", g_mapKafkaWriter, pWriter)
+		err := pWriter.WriteMessages(context.Background(), msg)
+		if err != nil {
+			log.Error(err.Error())
+		}
+	}()
+
 }
