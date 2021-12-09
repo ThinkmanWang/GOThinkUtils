@@ -8,23 +8,26 @@ type udputils struct {
 }
 
 func (this udputils) Send(szIP string, nPort int, data []byte) {
-	ip := net.ParseIP(szIP)
+	go func() {
+		ip := net.ParseIP(szIP)
 
-	srcAddr := &net.UDPAddr{IP: []byte{0, 0, 0, 0}, Port: 0}
-	dstAddr := &net.UDPAddr{IP: ip, Port: nPort}
+		srcAddr := &net.UDPAddr{IP: []byte{0, 0, 0, 0}, Port: 0}
+		dstAddr := &net.UDPAddr{IP: ip, Port: nPort}
 
-	conn, err := net.DialUDP("udp", srcAddr, dstAddr)
-	if err != nil {
-		return
-	}
-	defer conn.Close()
+		conn, err := net.DialUDP("udp", srcAddr, dstAddr)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
 
-	nRet, err := conn.Write(data)
-	if err != nil {
-		return
-	}
+		_, err = conn.Write(data)
+		if err != nil {
+			return
+		}
 
-	log.Info("%d", nRet)
+		//log.Info("%d", nRet)
+	}()
+
 }
 
 type OnUDPMsgCallback func(addr net.Addr, data []byte)
