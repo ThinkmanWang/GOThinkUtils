@@ -21,7 +21,7 @@ func onClose(pConn *websocket.Conn) {
 }
 
 func onMessage(pConn *websocket.Conn, msg []byte) {
-	log.Info("recv: %s", thinkutils.StringUtils.BytesToString(msg))
+	log.Info("[%p] recv: %s", pConn, thinkutils.StringUtils.BytesToString(msg))
 	err := pConn.WriteMessage(websocket.TextMessage, msg)
 	if err != nil {
 		log.Info("write:", err.Error())
@@ -39,6 +39,7 @@ func main() {
 		OnClose:   onClose,
 	}
 
+	//log.Info("%p", pHandler)
 	http.HandleFunc("/echo", pHandler.Handler)
 	http.HandleFunc("/", homeHandler)
 	http.ListenAndServe("127.0.0.1:8080", nil)
