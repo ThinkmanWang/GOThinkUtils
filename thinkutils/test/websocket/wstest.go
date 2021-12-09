@@ -13,9 +13,9 @@ var (
 	upgrader                     = websocket.Upgrader{}
 )
 
-type OnConnectCallback func(pConn *websocket.Conn)
-type OnCloseCallback func(pConn *websocket.Conn)
-type OnMsgCallback func(pConn *websocket.Conn, msg []byte)
+//type OnConnectCallback func(pConn *websocket.Conn)
+//type OnCloseCallback func(pConn *websocket.Conn)
+//type OnMsgCallback func(pConn *websocket.Conn, msg []byte)
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
@@ -43,7 +43,6 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		default:
 			continue
 		}
-
 	}
 }
 
