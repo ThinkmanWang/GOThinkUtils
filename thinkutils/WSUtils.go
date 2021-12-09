@@ -19,8 +19,8 @@ type WSHandler struct {
 	OnMsg     OnWSMsgCallback
 }
 
-func (this WSHandler) Handler(w http.ResponseWriter, r *http.Request) {
-	//log.Info("%p", &this)
+func (this *WSHandler) Handler(w http.ResponseWriter, r *http.Request) {
+	//log.Info("%p", this)
 	c, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Info("upgrade:", err)
