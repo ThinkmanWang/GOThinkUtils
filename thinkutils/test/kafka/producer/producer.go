@@ -25,7 +25,7 @@ func main() {
 			[]byte(szMsg))
 
 		log.Info("Send %s", szMsg)
-		time.Sleep(time.Duration(500) * time.Microsecond)
+		time.Sleep(time.Duration(500) * time.Millisecond)
 	}
 
 	wg.Wait()

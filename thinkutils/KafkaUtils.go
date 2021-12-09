@@ -39,7 +39,7 @@ func (this kafkautils) StartConsumer(szUrl string, szTopic string, szGroupId str
 			}
 
 			if callback != nil {
-				callback(m)
+				go callback(m)
 			}
 			//fmt.Printf("message at topic:%v partition:%v offset:%v	%s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
 		}
@@ -80,7 +80,7 @@ func (this kafkautils) SendMsg(szUrl string, szTopic string, data []byte) {
 	}
 
 	msg := kafka.Message{
-		Key:   []byte("1"),
+		//Key:   []byte("1"),
 		Value: data,
 	}
 
