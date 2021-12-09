@@ -9,42 +9,8 @@ import (
 )
 
 var (
-	log      *logger.LocalLogger = logger.DefaultLogger()
-	upgrader                     = websocket.Upgrader{}
+	log *logger.LocalLogger = logger.DefaultLogger()
 )
-
-//type OnConnectCallback func(pConn *websocket.Conn)
-//type OnCloseCallback func(pConn *websocket.Conn)
-//type OnMsgCallback func(pConn *websocket.Conn, msg []byte)
-
-func wsHandler(w http.ResponseWriter, r *http.Request) {
-	c, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Info("upgrade:", err)
-		return
-	}
-
-	defer func() {
-		onClose(c)
-		c.Close()
-	}()
-
-	go onConnect(c)
-
-	for {
-		mt, message, err := c.ReadMessage()
-		if err != nil {
-			break
-		}
-
-		switch mt {
-		case websocket.BinaryMessage, websocket.TextMessage:
-			go onMessage(c, message)
-		default:
-			continue
-		}
-	}
-}
 
 func onConnect(pConn *websocket.Conn) {
 	log.Info("New Connect")
@@ -67,7 +33,13 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/echo", wsHandler)
+	pHandler := &thinkutils.WSHandler{
+		OnConnect: onConnect,
+		OnMsg:     onMessage,
+		OnClose:   onClose,
+	}
+
+	http.HandleFunc("/echo", pHandler.Handler)
 	http.HandleFunc("/", homeHandler)
 	http.ListenAndServe("127.0.0.1:8080", nil)
 }
