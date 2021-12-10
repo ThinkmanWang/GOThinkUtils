@@ -13,4 +13,6 @@ func main() {
 	thinkutils.FileUtils.ReadLine("test.txt", func(nLine uint32, szLine string) {
 		log.Info("%d %s", nLine, szLine)
 	})
+
+	thinkutils.FileUtils.Copy("test.txt", "test123.txt")
 }
