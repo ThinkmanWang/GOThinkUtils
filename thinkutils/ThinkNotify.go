@@ -14,6 +14,7 @@ type ThinkNotify struct {
 }
 
 func (this *ThinkNotify) Watch(szPath string) {
+	//log.Info("%p", this)
 	pWatcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return

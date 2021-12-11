@@ -28,5 +28,6 @@ func main() {
 		OnDelete: onDelete,
 	}
 
+	//log.Info("%p", pWatch)
 	pWatch.Watch("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/temp")
 }
