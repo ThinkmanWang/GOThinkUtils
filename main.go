@@ -53,11 +53,12 @@ func buildFile(szDir string, szFile string) error {
 	szCmd := fmt.Sprintf("go build -o %s %s", szOutput, szFile)
 	log.Info(szCmd)
 
-	_, err := exec.Command("bash", "-c", szCmd).Output()
+	out, err := exec.Command("bash", "-c", szCmd).Output()
 	if err != nil {
 		return err
 	}
 
+	fmt.Println(out)
 	return nil
 }
 
