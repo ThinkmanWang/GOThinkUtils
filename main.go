@@ -9,7 +9,12 @@ import (
 	"strings"
 )
 
-var log *logger.LocalLogger = logger.DefaultLogger()
+var (
+	log         *logger.LocalLogger = logger.DefaultLogger()
+	g_nTotal    int                 = 0
+	g_nPos      int                 = 0
+	g_nPlatform int                 = 2
+)
 
 func allMainFile() []string {
 	szCmd := "grep \"func main()\"" + " `" + "grep \"package main\" . -rl" + "` " + "-rl"
@@ -21,10 +26,23 @@ func allMainFile() []string {
 	szOutput := string(out)
 	lstFiles := strings.Split(szOutput, "\n")
 
-	return lstFiles
+	lstRet := make([]string, 0)
+	for i := 0; i < len(lstFiles); i++ {
+		if thinkutils.StringUtils.IsEmpty(lstFiles[i]) {
+			continue
+		}
+
+		if false == strings.HasSuffix(lstFiles[i], ".go") {
+			continue
+		}
+
+		lstRet = append(lstRet, lstFiles[i])
+	}
+
+	return lstRet
 }
 
-func buildFile(szDir string, szFile string) error {
+func buildFile(szEnv string, szDir string, szFile string) error {
 	thinkutils.FileUtils.MkDir(szDir)
 
 	lstItem := strings.Split(szFile, "/")
@@ -50,8 +68,8 @@ func buildFile(szDir string, szFile string) error {
 		}
 	}
 
-	szCmd := fmt.Sprintf("go build -o %s %s", szOutput, szFile)
-	log.Info(szCmd)
+	szCmd := fmt.Sprintf("%s go build -o %s %s", szEnv, szOutput, szFile)
+	log.Info("[%d/%d] %s", g_nPos, g_nTotal, szCmd)
 
 	out, err := exec.Command("bash", "-c", szCmd).Output()
 	if err != nil {
@@ -77,16 +95,13 @@ func main() {
 		return
 	}
 
+	g_nTotal = len(lstFiles) * g_nPlatform
 	for i := 0; i < len(lstFiles); i++ {
-		szFile := lstFiles[i]
-		if thinkutils.StringUtils.IsEmpty(szFile) {
-			continue
-		}
+		g_nPos++
+		buildFile("env GOOS=linux GOARCH=amd64", "bin/linux", lstFiles[i])
 
-		if false == strings.HasSuffix(szFile, ".go") {
-			continue
-		}
-
-		buildFile("bin", szFile)
+		g_nPos++
+		buildFile("env GOOS=darwin GOARCH=amd64", "bin/mac", lstFiles[i])
+		//buildFile("env GOOS=windows GOARCH=amd64", "bin/windows", lstFiles[i])
 	}
 }
