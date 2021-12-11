@@ -13,6 +13,7 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/howeyc/fsnotify v0.9.0 // indirect
 	github.com/klauspost/compress v1.9.8 // indirect
 	github.com/panjf2000/ants v1.3.0 // indirect
 	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
