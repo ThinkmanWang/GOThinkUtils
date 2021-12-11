@@ -2,6 +2,7 @@ package thinkutils
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"os"
 )
@@ -10,6 +11,26 @@ type fileutils struct {
 }
 
 type OnReadLineCallback func(nLine uint32, szLine string)
+
+func (this fileutils) Exists(szPath string) bool {
+	_, err := os.Stat(szPath)
+	if err == nil {
+		return true
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	return false
+}
+
+func (this fileutils) MkDir(szPath string) {
+	if _, serr := os.Stat(szPath); serr != nil {
+		merr := os.MkdirAll(szPath, os.ModePerm)
+		if merr != nil {
+			panic(merr)
+		}
+	}
+}
 
 func (this fileutils) ReadLine(szPath string, callback OnReadLineCallback) {
 	inFile, err := os.Open(szPath)

@@ -4,166 +4,88 @@ import (
 	"GOThinkUtils/thinkutils"
 	"GOThinkUtils/thinkutils/logger"
 	"fmt"
-	"github.com/buger/jsonparser"
-	"runtime"
-	"strconv"
+	"os"
+	"os/exec"
 	"strings"
-	"time"
 )
 
 var log *logger.LocalLogger = logger.DefaultLogger()
 
-func datetimeTest() {
-	fmt.Println(thinkutils.DateTime.Timestamp())
-	fmt.Println(thinkutils.DateTime.TimestampMs())
-	fmt.Println(thinkutils.StringUtils.IsEmpty(" 123 "))
-
-	var pszTxt *string = new(string)
-	*pszTxt = " 123"
-	fmt.Println(thinkutils.StringUtils.IsEmptyPtr(pszTxt))
-	fmt.Println(thinkutils.StringUtils.IsEmpty(*pszTxt))
-
-	fmt.Println(thinkutils.DateTime.CurDatetime())
-	fmt.Println(thinkutils.DateTime.Yesterday())
-	fmt.Println(thinkutils.DateTime.Tomorrow())
-	fmt.Println(thinkutils.DateTime.TimeStampToDateTime(thinkutils.DateTime.Timestamp()))
-	fmt.Println(thinkutils.DateTime.Hour())
-	fmt.Println(strconv.Atoi("05"))
-
-	fmt.Println(thinkutils.DateTime.DiffDate(-3))
-	fmt.Println(thinkutils.DateTime.DiffDate(4))
-	fmt.Println(thinkutils.DateTime.DateToTimestamp("2021-12-06"))
-	fmt.Println(thinkutils.DateTime.FirstDayOfMonth("2021-10-20"))
-	fmt.Println(thinkutils.DateTime.LastDayOfMonth("2021-03-01"))
-
-	lstDate := thinkutils.DateTime.DateBetweenStartEnd("2021-12-01", "2021-12-10")
-	for i := 0; i < len(lstDate); i++ {
-		fmt.Println(lstDate[i])
-	}
-
-	for _, szDate := range lstDate {
-		fmt.Println(szDate)
-	}
-
-	fmt.Println(thinkutils.DateTime.StartEndOfWeek("2021-12-16"))
-}
-
-func cor1() {
-	log.Info("%d", goid())
-	time.Sleep(1000)
-	fmt.Println("FXXK")
-}
-
-func cor2(chRet chan string) {
-	chRet <- "FXXXXXXXXXXXXXK"
-}
-
-func coTest() {
-	go cor1()
-
-	c := make(chan string)
-	go cor2(c)
-
-	szRet := <-c
-	fmt.Println(szRet)
-}
-
-func logTest() {
-	//logger.SetLogger(`{"Console": {"level": "DEBG"}`)
-	log.Info("FXXK")
-}
-
-func md5Test() {
-	log.Info(thinkutils.MD5Utils.MD5String("HHH"))
-
-	szMd5 := thinkutils.MD5Utils.MD5File("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/GOThinkUtils")
-	log.Info(szMd5)
-
-	chRet := make(chan string)
-	go thinkutils.MD5Utils.MD5FileCor("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/GOThinkUtils", chRet)
-	szMd5 = <-chRet
-	log.Info(szMd5)
-}
-
-func jsonTest() {
-	data := []byte(`{
-	  "person": {
-		"name": {
-		  "first": "Leonid",
-		  "last": "Bugaev",
-		  "fullName": "Leonid Bugaev"
-		},
-		"github": {
-		  "handle": "buger",
-		  "followers": 109
-		},
-		"avatars": [
-		  { "url": "https://avatars1.githubusercontent.com/u/14009?v=3&s=460", "type": "thumbnail" }
-			, { "url": "https://avatars1.githubusercontent.com/u/14009?v=3&s=470", "type": "thumbnail" }
-		]
-	  },
-	  "company": {
-		"name": "Acme"
-	  }
-	}`)
-
-	szTxt, _ := jsonparser.GetString(data, "person", "name", "fullName")
-	log.Info(szTxt)
-
-	nFollower, _ := jsonparser.GetInt(data, "person", "github", "followers")
-	log.Info("%d", nFollower)
-
-	jsonparser.ArrayEach(data, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-		szUrl, _ := jsonparser.GetString(value, "url")
-		log.Info(szUrl)
-	}, "person", "avatars")
-}
-
-func goid() int {
-	var buf [64]byte
-	n := runtime.Stack(buf[:], false)
-	idField := strings.Fields(strings.TrimPrefix(string(buf[:n]), "goroutine "))[0]
-	id, err := strconv.Atoi(idField)
+func allMainFile() []string {
+	szCmd := "grep \"func main()\"" + " `" + "grep \"package main\" . -rl" + "` " + "-rl"
+	out, err := exec.Command("bash", "-c", szCmd).Output()
 	if err != nil {
-		panic(fmt.Sprintf("cannot get goroutine id: %v", err))
+		log.Error("%s", err.Error())
 	}
-	return id
+
+	szOutput := string(out)
+	lstFiles := strings.Split(szOutput, "\n")
+
+	return lstFiles
+}
+
+func buildFile(szDir string, szFile string) error {
+	thinkutils.FileUtils.MkDir(szDir)
+
+	lstItem := strings.Split(szFile, "/")
+	if nil == lstItem || len(lstItem) <= 0 {
+		return nil
+	}
+
+	szFileName := strings.Split(lstItem[len(lstItem)-1], ".")[0]
+	//log.Info("%s => [%s]", szFile, szFileName)
+
+	szOutput := fmt.Sprintf("%s/%s", szDir, szFileName)
+	if thinkutils.FileUtils.Exists(szOutput) {
+		nNum := 1
+		for {
+			szTemp := fmt.Sprintf("%s%d", szOutput, nNum)
+
+			if false == thinkutils.FileUtils.Exists(szTemp) {
+				szOutput = szTemp
+				break
+			}
+
+			nNum++
+		}
+	}
+
+	szCmd := fmt.Sprintf("go build -o %s %s", szOutput, szFile)
+	log.Info(szCmd)
+
+	_, err := exec.Command("bash", "-c", szCmd).Output()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func main() {
-	log.Info("%d", 123)
-	fmt.Println("Hello World")
+	szPath, err := os.Getwd()
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
 
-	//var logger *log.Logger = new(log.Logger)
+	log.Info(szPath)
 
-	datetimeTest()
+	lstFiles := allMainFile()
+	if nil == lstFiles || len(lstFiles) <= 0 {
+		log.Info("No file found return!")
+		return
+	}
 
-	coTest()
-	fmt.Println("fxxk1")
+	for i := 0; i < len(lstFiles); i++ {
+		szFile := lstFiles[i]
+		if thinkutils.StringUtils.IsEmpty(szFile) {
+			continue
+		}
 
-	logTest()
+		if false == strings.HasSuffix(szFile, ".go") {
+			continue
+		}
 
-	log.Info(thinkutils.RandUtils.RandPasssword(8))
-	log.Info(thinkutils.RandUtils.UUID())
-
-	md5Test()
-
-	log.Info(thinkutils.IPUtils.LocalIP())
-
-	jsonTest()
-
-	log.Info("%d", goid())
-
-	defer log.Info("RUN LAST2")
-	defer log.Info("RUN LAST1")
-	log.Info("RUN BEFORE")
-
-	log.Info("%t", thinkutils.RegularUtils.IsPhone("123"))
-	log.Info("%t", thinkutils.RegularUtils.IsPhone("18621675203"))
-	log.Info("%t", thinkutils.RegularUtils.IsEmail("wangxf1985@gmail.com"))
-	log.Info("%t", thinkutils.RegularUtils.IsEmail("wangxf1985@gmailcom"))
-	log.Info("%t", thinkutils.RegularUtils.IsEmail("wangxf1985gmail.com"))
-	log.Info("%t", thinkutils.RegularUtils.IsEmail("wangxf1985@gmail.net"))
-
-	time.Sleep(10 * 1000)
+		buildFile("bin", szFile)
+	}
 }
