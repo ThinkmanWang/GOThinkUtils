@@ -71,7 +71,7 @@ type UDPServer struct {
 }
 
 func (this *UDPServer) Start(nPort int) {
-	this.StartEx(nPort, 8)
+	this.StartEx(nPort, 8192)
 }
 
 func (this *UDPServer) StartEx(nPort int, bufSize uint32) {
