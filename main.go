@@ -76,7 +76,7 @@ func buildFile(szEnv string, szDir string, szFile string) error {
 		return err
 	}
 
-	fmt.Println(out)
+	fmt.Println(strings.TrimSpace(string(out)))
 	return nil
 }
 
