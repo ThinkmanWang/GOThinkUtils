@@ -13,7 +13,7 @@ var (
 	log         *logger.LocalLogger = logger.DefaultLogger()
 	g_nTotal    int                 = 0
 	g_nPos      int                 = 0
-	g_nPlatform int                 = 2
+	g_nPlatform int                 = 3
 )
 
 func allMainFile() []string {
@@ -42,7 +42,8 @@ func allMainFile() []string {
 	return lstRet
 }
 
-func buildFile(szEnv string, szDir string, szFile string) error {
+func buildFile(szEnv string, szDir string, szFile string, szExt string) error {
+	g_nPos++
 	thinkutils.FileUtils.MkDir(szDir)
 
 	lstItem := strings.Split(szFile, "/")
@@ -54,12 +55,12 @@ func buildFile(szEnv string, szDir string, szFile string) error {
 	//log.Info("%s => [%s]", szFile, szFileName)
 
 	szOutput := fmt.Sprintf("%s/%s", szDir, szFileName)
-	if thinkutils.FileUtils.Exists(szOutput) {
+	if thinkutils.FileUtils.Exists(fmt.Sprintf("%s%s", szOutput, szExt)) {
 		nNum := 1
 		for {
 			szTemp := fmt.Sprintf("%s%d", szOutput, nNum)
 
-			if false == thinkutils.FileUtils.Exists(szTemp) {
+			if false == thinkutils.FileUtils.Exists(fmt.Sprintf("%s%s", szTemp, szExt)) {
 				szOutput = szTemp
 				break
 			}
@@ -68,7 +69,7 @@ func buildFile(szEnv string, szDir string, szFile string) error {
 		}
 	}
 
-	szCmd := fmt.Sprintf("%s go build -o %s %s", szEnv, szOutput, szFile)
+	szCmd := fmt.Sprintf("%s go build -o %s%s %s", szEnv, szOutput, szExt, szFile)
 	log.Info("[%d/%d] %s", g_nPos, g_nTotal, szCmd)
 
 	out, err := exec.Command("bash", "-c", szCmd).Output()
@@ -97,11 +98,8 @@ func main() {
 
 	g_nTotal = len(lstFiles) * g_nPlatform
 	for i := 0; i < len(lstFiles); i++ {
-		g_nPos++
-		buildFile("env GOOS=linux GOARCH=amd64", "bin/linux", lstFiles[i])
-
-		g_nPos++
-		buildFile("env GOOS=darwin GOARCH=amd64", "bin/mac", lstFiles[i])
-		//buildFile("env GOOS=windows GOARCH=amd64", "bin/windows", lstFiles[i])
+		buildFile("env GOOS=linux GOARCH=amd64", "bin/linux", lstFiles[i], "")
+		buildFile("env GOOS=darwin GOARCH=amd64", "bin/mac", lstFiles[i], "")
+		buildFile("env GOOS=windows GOARCH=amd64", "bin/windows", lstFiles[i], ".exe")
 	}
 }
