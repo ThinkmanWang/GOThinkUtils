@@ -71,7 +71,7 @@ type UDPServer struct {
 }
 
 func (this *UDPServer) Start(nPort int) {
-	this.StartEx(nPort, 1024)
+	this.StartEx(nPort, 8)
 }
 
 func (this *UDPServer) StartEx(nPort int, bufSize uint32) {
@@ -81,16 +81,16 @@ func (this *UDPServer) StartEx(nPort int, bufSize uint32) {
 		return
 	}
 
-	data := make([]byte, bufSize)
 	for {
-		_, remoteAddr, err := listener.ReadFrom(data)
+		buf := make([]byte, bufSize)
+		_, remoteAddr, err := listener.ReadFrom(buf)
 		if err != nil {
 			log.Info(err.Error())
 			break
 		}
 
 		if nil != this.OnMsg {
-			go this.OnMsg(remoteAddr, data)
+			go this.OnMsg(remoteAddr, buf)
 		}
 		//log.Info("<%s> %s", remoteAddr, data[:n])
 	}
