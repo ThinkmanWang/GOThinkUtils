@@ -73,6 +73,24 @@ func testAjaxResult() {
 	log.Info(thinkutils.JSONUtils.ToJson(pAjax))
 }
 
+func testAjaxResult1() {
+
+	szJson := `[{"Name":"a","Age":1},{"Name":"b","Age":2}]`
+	var user []User
+	err := thinkutils.JSONUtils.FromJson(szJson, &user)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	pAjax := thinkutils.AjaxResultSuccessWithData(user)
+
+	log.Info(thinkutils.JSONUtils.ToJson(pAjax))
+}
+
+func testAjaxResult2() {
+	log.Info(thinkutils.JSONUtils.ToJson(thinkutils.AjaxResultSuccess()))
+}
+
 func main() {
 	jsonObject()
 	jsonArray()
@@ -82,4 +100,6 @@ func main() {
 	parseAjaxResult()
 
 	testAjaxResult()
+	testAjaxResult1()
+	testAjaxResult2()
 }

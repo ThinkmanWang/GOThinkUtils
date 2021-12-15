@@ -10,6 +10,14 @@ func AjaxResultSuccess() AjaxResult {
 	return AjaxResult{Code: 200, Msg: "Success"}
 }
 
+func AjaxResultSuccessWithData(data interface{}) AjaxResult {
+	return AjaxResult{
+		Code: 200,
+		Msg:  "Success",
+		Data: data,
+	}
+}
+
 func AjaxResultError() AjaxResult {
 	return AjaxResult{Code: 500, Msg: "Server Error"}
 }
