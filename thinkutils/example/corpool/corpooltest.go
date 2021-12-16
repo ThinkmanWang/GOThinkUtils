@@ -11,6 +11,13 @@ var (
 	log *logger.LocalLogger = logger.DefaultLogger()
 )
 
+func task(i int, pWg *sync.WaitGroup) {
+	defer pWg.Done()
+
+	time.Sleep(time.Second)
+	log.Info("FXXK %d", i)
+}
+
 func main() {
 	wg := sync.WaitGroup{}
 	pool, _ := ants.NewPool(10)
@@ -18,13 +25,11 @@ func main() {
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 
-		go func() {
+		go func(i int, pWg *sync.WaitGroup) {
 			pool.Submit(func() {
-				log.Info("FXXXXXXK")
-				time.Sleep(time.Second)
-				wg.Done()
+				task(i, pWg)
 			})
-		}()
+		}(i, &wg)
 	}
 	defer pool.Release()
 
