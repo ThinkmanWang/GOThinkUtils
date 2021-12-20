@@ -16,6 +16,11 @@ type User struct {
 	Age  uint8  `json:"age"`
 }
 
+type UserCopy struct {
+	Name string `json:"name"`
+	Age  uint8  `json:"age"`
+}
+
 func main() {
 	//log.Info("FXXK")
 
@@ -44,4 +49,15 @@ func main() {
 	}).First()
 
 	fmt.Println(name)
+
+	var users []UserCopy
+	linq.From(lstUser).WhereT(func(user User) bool {
+		return user.Age > 0
+	}).SelectT(func(user User) UserCopy {
+		return UserCopy{
+			Name: user.Name,
+			Age:  user.Age,
+		}
+	}).ToSlice(&users)
+	fmt.Println(users)
 }
