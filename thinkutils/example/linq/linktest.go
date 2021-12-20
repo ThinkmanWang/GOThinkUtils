@@ -54,10 +54,17 @@ func main() {
 	linq.From(lstUser).WhereT(func(user User) bool {
 		return user.Age > 0
 	}).SelectT(func(user User) UserCopy {
-		return UserCopy{
+		u := UserCopy{
 			Name: user.Name,
 			Age:  user.Age,
 		}
+		log.Info("%p", &u)
+		return u
 	}).ToSlice(&users)
+
+	for i := 0; i < len(users); i++ {
+		u := users[i]
+		log.Info("%p", &u)
+	}
 	fmt.Println(users)
 }
