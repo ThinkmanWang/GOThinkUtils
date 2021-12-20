@@ -12,7 +12,7 @@ var (
 )
 
 func onMsg(addr net.Addr, data []byte) {
-	log.Info("<%s> %s", addr, thinkutils.StringUtils.BytesToString(data))
+	log.Info("<%s> %s", addr.String(), thinkutils.StringUtils.BytesToString(data))
 }
 
 func sendTest() {
