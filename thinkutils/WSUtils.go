@@ -17,7 +17,7 @@ var (
 			return true
 		},
 	} // use default options
-	
+
 )
 
 type WSHandler struct {
