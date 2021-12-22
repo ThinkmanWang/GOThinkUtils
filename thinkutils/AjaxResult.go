@@ -7,13 +7,13 @@ type AjaxResult struct {
 }
 
 func AjaxResultSuccess() AjaxResult {
-	return AjaxResult{Code: 200, Msg: "Success"}
+	return AjaxResult{Code: 200, Msg: "success"}
 }
 
 func AjaxResultSuccessWithData(data interface{}) AjaxResult {
 	return AjaxResult{
 		Code: 200,
-		Msg:  "Success",
+		Msg:  "success",
 		Data: data,
 	}
 }

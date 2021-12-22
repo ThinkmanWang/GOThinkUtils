@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"html/template"
+	"net/http"
 	"strings"
 )
 
@@ -35,7 +36,7 @@ func homeHandler(c *gin.Context) {
 
 func ipHandler(c *gin.Context) {
 	szHost := strings.Split(c.Request.Host, ":")[0]
-	c.JSON(200, thinkutils.AjaxResultSuccessWithData(szHost))
+	c.JSON(http.StatusOK, thinkutils.AjaxResultSuccessWithData(szHost))
 }
 
 func main() {
