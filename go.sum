@@ -15,6 +15,8 @@ github.com/ecofast/rtl v0.0.0-20200709123611-d8ced2238cab h1:70Cc8WSOCdSeoLcbcZl
 github.com/ecofast/rtl v0.0.0-20200709123611-d8ced2238cab/go.mod h1:y9vx/VBBifeehxxY1qwLL3N8crc4Q+EBCepah1agRV0=
 github.com/ecofast/tcpsock v0.0.0-20180305073918-520f2b697dff h1:ttNMX3MAl3xo/VfzKZN1vXQ7fyEOYDyobVoSqJ2vkvA=
 github.com/ecofast/tcpsock v0.0.0-20180305073918-520f2b697dff/go.mod h1:z5l2wFHg8F5C+9LxJtxIk14951CFYuSfYKdphYpyE60=
+github.com/emirpasic/gods v1.12.0 h1:QAUIPSaCu4G+POclxeqb3F+WPpdKqFGlw36+yOzGlrg=
+github.com/emirpasic/gods v1.12.0/go.mod h1:YfzfFFoVP/catgzJb4IKIqXjX78Ha8FMSDh3ymbK86o=
 github.com/frankban/quicktest v1.11.3/go.mod h1:wRf/ReqHper53s+kmmSZizM8NamnL3IM0I9ntUbOk+k=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=

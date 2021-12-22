@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	log *logger.LocalLogger = logger.DefaultLogger()
+	log           *logger.LocalLogger = logger.DefaultLogger()
+	pHeartbeatMgr *thinkutils.HeartbeatMgr
 )
 
 func onConnect(pConn *websocket.Conn) {
@@ -23,6 +24,8 @@ func onClose(pConn *websocket.Conn) {
 }
 
 func onMessage(pConn *websocket.Conn, msg []byte) {
+	pHeartbeatMgr.Update(pConn)
+
 	log.Info("[%p] recv: %s", pConn, thinkutils.StringUtils.BytesToString(msg))
 	err := pConn.WriteMessage(websocket.TextMessage, msg)
 	if err != nil {
@@ -39,7 +42,16 @@ func ipHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, thinkutils.AjaxResultSuccessWithData(szHost))
 }
 
+func onHBTimeout(conn interface{}) {
+	pConn := conn.(*websocket.Conn)
+	log.Info("%p heartbeat timeout", pConn)
+	pConn.Close()
+}
+
 func main() {
+	pHeartbeatMgr = &thinkutils.HeartbeatMgr{}
+	pHeartbeatMgr.Init(10, onHBTimeout)
+
 	pHandler := &thinkutils.WSHandler{
 		OnConnect: onConnect,
 		OnMsg:     onMessage,

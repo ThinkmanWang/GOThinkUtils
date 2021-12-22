@@ -10,6 +10,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/ecofast/rtl v0.0.0-20200709123611-d8ced2238cab // indirect
 	github.com/ecofast/tcpsock v0.0.0-20180305073918-520f2b697dff // indirect
+	github.com/emirpasic/gods v1.12.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.7.7 // indirect
 	github.com/go-playground/locales v0.13.0 // indirect
