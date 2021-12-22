@@ -40,15 +40,32 @@ func (this fileutils) ReadLine(szPath string, callback OnReadLineCallback) {
 
 	defer inFile.Close()
 
-	scanner := bufio.NewScanner(inFile)
 	var nLine uint32 = 0
-	for scanner.Scan() {
+	reader := bufio.NewReader(inFile)
+	for {
+		lineBytes, _, err := reader.ReadLine()
+		if err == io.EOF {
+			break
+		}
+
+		szLine := string(lineBytes)
 		if callback != nil {
-			callback(nLine, scanner.Text())
+			callback(nLine, szLine)
 		}
 		nLine++
-		//fmt.Println(scanner.Text()) // the line
+		//utfStr := ConvertEncoding(gbkStr, "GBK")
+		//fmt.Println(utfStr)
 	}
+
+	//scanner := bufio.NewScanner(inFile)
+	//var nLine uint32 = 0
+	//for scanner.Scan() {
+	//	if callback != nil {
+	//		callback(nLine, scanner.Text())
+	//	}
+	//	nLine++
+	//	//fmt.Println(scanner.Text()) // the line
+	//}
 }
 
 func (this fileutils) Copy(szSrc string, szDst string) error {
