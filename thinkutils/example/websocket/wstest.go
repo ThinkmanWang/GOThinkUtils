@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 	"html/template"
 	"net/http"
+	"runtime"
 	"strings"
 )
 
@@ -49,6 +50,8 @@ func onHBTimeout(conn interface{}) {
 }
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	pHeartbeatMgr = &thinkutils.HeartbeatMgr{}
 	pHeartbeatMgr.Init(10, onHBTimeout)
 
