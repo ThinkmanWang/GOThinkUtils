@@ -23,9 +23,11 @@ type MyStruct struct {
 	Desc string
 }
 
-func onStructMsg(data MyStruct) {
+func onStructMsg(data *MyStruct) {
+	log.Info("%p", data)
+
 	time.Sleep(5 * time.Second)
-	fmt.Println(data)
+	fmt.Println(*data)
 }
 
 func onMultiParams(szName string, szDesc string) {
@@ -35,7 +37,10 @@ func onMultiParams(szName string, szDesc string) {
 
 func publish() {
 	bus.Publish("main:message", "FXXK")
-	bus.Publish("main:otherMessage", MyStruct{Name: "123", Desc: "456"})
+
+	pData := &MyStruct{Name: "123", Desc: "456"}
+	log.Info("%p", pData)
+	bus.Publish("main:otherMessage", pData)
 	bus.Publish("main:multiParams", "123", "456")
 	bus.Publish("main:123456", "12356")
 }
