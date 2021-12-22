@@ -3,9 +3,10 @@ package main
 import (
 	"GOThinkUtils/thinkutils"
 	"GOThinkUtils/thinkutils/logger"
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"html/template"
-	"net/http"
+	"strings"
 )
 
 var (
@@ -28,8 +29,13 @@ func onMessage(pConn *websocket.Conn, msg []byte) {
 	}
 }
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	homeTemplate.Execute(w, "ws://"+r.Host+"/echo")
+func homeHandler(c *gin.Context) {
+	homeTemplate.Execute(c.Writer, "ws://"+c.Request.Host+"/echo")
+}
+
+func ipHandler(c *gin.Context) {
+	szHost := strings.Split(c.Request.Host, ":")[0]
+	c.JSON(200, thinkutils.AjaxResultSuccessWithData(szHost))
 }
 
 func main() {
@@ -39,10 +45,13 @@ func main() {
 		OnClose:   onClose,
 	}
 
-	//log.Info("%p", pHandler)
-	http.HandleFunc("/echo", pHandler.Handler)
-	http.HandleFunc("/", homeHandler)
-	http.ListenAndServe("127.0.0.1:8080", nil)
+	eng := gin.Default()
+	// 路由组1 ，处理GET请求
+	eng.GET("/echo", pHandler.Handler)
+	eng.GET("/", homeHandler)
+	eng.GET("/ip", ipHandler)
+
+	eng.Run(":8080")
 }
 
 var homeTemplate = template.Must(template.New("").Parse(`
