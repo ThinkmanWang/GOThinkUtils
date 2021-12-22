@@ -37,6 +37,7 @@ func publish() {
 	bus.Publish("main:message", "FXXK")
 	bus.Publish("main:otherMessage", MyStruct{Name: "123", Desc: "456"})
 	bus.Publish("main:multiParams", "123", "456")
+	bus.Publish("main:123456", "12356")
 }
 
 func main() {
