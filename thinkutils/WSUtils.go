@@ -11,13 +11,13 @@ type OnCloseCallback func(pConn *websocket.Conn)
 type OnWSMsgCallback func(pConn *websocket.Conn, msg []byte)
 
 var (
-	//wsUpgrader = websocket.Upgrader{}
 	upgrader = websocket.Upgrader{
 		// 解决跨域问题
 		CheckOrigin: func(r *http.Request) bool {
 			return true
 		},
 	} // use default options
+	
 )
 
 type WSHandler struct {
