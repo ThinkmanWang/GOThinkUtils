@@ -48,7 +48,10 @@ func (this *WSHandler) onHBTimeout(conn interface{}) {
 		go this.OnTimeout(pConn)
 	}
 
-	pConn.Close()
+	err := pConn.Close()
+	if err != nil {
+		return
+	}
 }
 
 func (this *WSHandler) Handler(c *gin.Context) {

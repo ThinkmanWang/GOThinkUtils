@@ -28,7 +28,7 @@ var (
 	packet  *thinktcp.PingPacket
 
 	packetLen    int = 32 // byte
-	pingInterval int = 1  // second
+	pingInterval int = 15 // second
 	pingTimes    int = 10
 
 	canPing  bool = true
@@ -44,36 +44,6 @@ func init() {
 		<-signals
 		shutdown <- true
 	}()
-}
-
-func main() {
-	parseFlag()
-	genPacket()
-
-	client := thinktcp.NewTcpClient(flag.Args()[0], onConnect, onClose, onProtocol)
-	go client.Run()
-
-	ticker := time.NewTicker(time.Duration(pingInterval) * time.Second)
-	go func() {
-		cnt := 0
-		for range ticker.C {
-			if tcpConn != nil && canPing && stats.sendNum < pingTimes {
-				canPing = false
-				sendTick = time.Now()
-				tcpConn.Write(packet)
-				stats.sendNum++
-			}
-			cnt++
-			if cnt > pingTimes {
-				shutdown <- true
-				break
-			}
-		}
-	}()
-
-	<-shutdown
-	ticker.Stop()
-	client.Close()
 }
 
 func onProtocol() thinktcp.Protocol {
@@ -139,4 +109,34 @@ func printStats() {
 		}
 		fmt.Printf("min/avg/max lag = %d/%d/%d ms\n", min, sum/len(stats.lags), max)
 	}
+}
+
+func main() {
+	parseFlag()
+	genPacket()
+
+	client := thinktcp.NewTcpClient(flag.Args()[0], onConnect, onClose, onProtocol)
+	go client.Run()
+
+	ticker := time.NewTicker(time.Duration(pingInterval) * time.Second)
+	go func() {
+		cnt := 0
+		for range ticker.C {
+			if tcpConn != nil && canPing && stats.sendNum < pingTimes {
+				canPing = false
+				sendTick = time.Now()
+				tcpConn.Write(packet)
+				stats.sendNum++
+			}
+			cnt++
+			if cnt > pingTimes {
+				shutdown <- true
+				break
+			}
+		}
+	}()
+
+	<-shutdown
+	ticker.Stop()
+	client.Close()
 }
