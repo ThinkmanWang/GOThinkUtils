@@ -87,31 +87,3 @@ func (this *WSHandler) Handler(c *gin.Context) {
 		}
 	}
 }
-
-//func (this *WSHandler) Handler(w http.ResponseWriter, r *http.Request) {
-//	//log.Info("%p", this)
-//	c, err := wsUpgrader.Upgrade(w, r, nil)
-//	if err != nil {
-//		log.Info("upgrade:", err)
-//		return
-//	}
-//
-
-//
-//	for {
-//		mt, message, err := c.ReadMessage()
-//		if err != nil {
-//			break
-//		}
-//
-//		switch mt {
-//		case websocket.BinaryMessage, websocket.TextMessage:
-//			if this.OnMsg != nil {
-//				go this.OnMsg(c, message)
-//			}
-//			//go onMessage(c, message)
-//		default:
-//			continue
-//		}
-//	}
-//}
