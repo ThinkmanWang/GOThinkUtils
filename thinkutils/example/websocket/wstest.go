@@ -12,12 +12,15 @@ import (
 )
 
 var (
-	log           *logger.LocalLogger = logger.DefaultLogger()
-	pHeartbeatMgr *thinkutils.HeartbeatMgr
+	log *logger.LocalLogger = logger.DefaultLogger()
 )
 
 func onConnect(pConn *websocket.Conn) {
 	log.Info("New Connect")
+}
+
+func onTimeout(pConn *websocket.Conn) {
+	log.Info("Heartbeat timeout")
 }
 
 func onClose(pConn *websocket.Conn) {
@@ -25,8 +28,6 @@ func onClose(pConn *websocket.Conn) {
 }
 
 func onMessage(pConn *websocket.Conn, msg []byte) {
-	pHeartbeatMgr.Update(pConn)
-
 	log.Info("[%p] recv: %s", pConn, thinkutils.StringUtils.BytesToString(msg))
 	err := pConn.WriteMessage(websocket.TextMessage, msg)
 	if err != nil {
@@ -43,23 +44,18 @@ func ipHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, thinkutils.AjaxResultSuccessWithData(szHost))
 }
 
-func onHBTimeout(conn interface{}) {
-	pConn := conn.(*websocket.Conn)
-	log.Info("%p heartbeat timeout", pConn)
-	pConn.Close()
-}
-
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	pHeartbeatMgr = &thinkutils.HeartbeatMgr{}
-	pHeartbeatMgr.Init(10, onHBTimeout)
-
 	pHandler := &thinkutils.WSHandler{
-		OnConnect: onConnect,
-		OnMsg:     onMessage,
-		OnClose:   onClose,
+		OnConnect:        onConnect,
+		OnMsg:            onMessage,
+		OnClose:          onClose,
+		OnTimeout:        onTimeout,
+		HeartbeatTimeout: 10,
 	}
+
+	pHandler.Init()
 
 	eng := gin.Default()
 	// 路由组1 ，处理GET请求

@@ -8,6 +8,7 @@ import (
 
 type OnConnectCallback func(pConn *websocket.Conn)
 type OnCloseCallback func(pConn *websocket.Conn)
+type OnTimeoutCallback func(pConn *websocket.Conn)
 type OnWSMsgCallback func(pConn *websocket.Conn, msg []byte)
 
 var (
@@ -24,6 +25,30 @@ type WSHandler struct {
 	OnConnect OnConnectCallback
 	OnClose   OnCloseCallback
 	OnMsg     OnWSMsgCallback
+	OnTimeout OnTimeoutCallback
+
+	m_pHeartbeatMgr  *HeartbeatMgr
+	HeartbeatTimeout uint32
+}
+
+func (this *WSHandler) Init() {
+	this.m_pHeartbeatMgr = &HeartbeatMgr{}
+	if this.HeartbeatTimeout <= 0 {
+		this.HeartbeatTimeout = 60
+	}
+
+	this.m_pHeartbeatMgr.Init(this.HeartbeatTimeout, this.onHBTimeout)
+}
+
+func (this *WSHandler) onHBTimeout(conn interface{}) {
+	pConn := conn.(*websocket.Conn)
+	log.Info("%p heartbeat timeout", pConn)
+
+	if this.OnTimeout != nil {
+		go this.OnTimeout(pConn)
+	}
+
+	pConn.Close()
 }
 
 func (this *WSHandler) Handler(c *gin.Context) {
@@ -35,7 +60,7 @@ func (this *WSHandler) Handler(c *gin.Context) {
 
 	defer func() {
 		if this.OnClose != nil {
-			this.OnClose(ws)
+			go this.OnClose(ws)
 		}
 		ws.Close()
 	}()
@@ -50,6 +75,7 @@ func (this *WSHandler) Handler(c *gin.Context) {
 			break
 		}
 
+		this.m_pHeartbeatMgr.Update(ws)
 		switch mt {
 		case websocket.BinaryMessage, websocket.TextMessage:
 			if this.OnMsg != nil {
