@@ -25,10 +25,9 @@ var (
 	shutdown = make(chan bool, 1)
 
 	tcpConn *thinktcp.TcpConn
-	packet  *thinktcp.PingPacket
 
 	packetLen    int = 32 // byte
-	pingInterval int = 15 // second
+	pingInterval int = 1  // second
 	pingTimes    int = 10
 
 	canPing  bool = true
@@ -83,14 +82,6 @@ func parseFlag() {
 	}
 }
 
-func genPacket() {
-	packet = thinktcp.NewPingPacket(thinkutils.StringUtils.StringToBytes("012345678901234567890123456789012345678901234567890123456789"))
-	//packet = &protocol.PingPacket{
-	//	BodyLen: uint32(packetLen) - protocol.PacketHeadSize,
-	//	Body:    make([]byte, packetLen),
-	//}
-}
-
 func printStats() {
 	fmt.Printf("---%s tcpping statistics---\n", flag.Args()[0])
 	fmt.Printf("%d packets transmitted.\n", stats.sendNum)
@@ -113,7 +104,6 @@ func printStats() {
 
 func main() {
 	parseFlag()
-	genPacket()
 
 	client := thinktcp.NewTcpClient(flag.Args()[0], onConnect, onClose, onProtocol)
 	go client.Run()
@@ -125,7 +115,9 @@ func main() {
 			if tcpConn != nil && canPing && stats.sendNum < pingTimes {
 				canPing = false
 				sendTick = time.Now()
-				tcpConn.Write(packet)
+
+				p := thinktcp.NewPingPacket(thinkutils.StringUtils.StringToBytes(thinkutils.DateTime.CurDatetime()))
+				tcpConn.Write(p)
 				stats.sendNum++
 			}
 			cnt++
