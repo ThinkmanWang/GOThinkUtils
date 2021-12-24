@@ -2,12 +2,7 @@ package thinktcp
 
 import (
 	"GOThinkUtils/thinkutils"
-	"GOThinkUtils/thinkutils/logger"
 	"sync"
-)
-
-var (
-	log *logger.LocalLogger = logger.DefaultLogger()
 )
 
 type ThinkTCPServer struct {

@@ -21,17 +21,17 @@ func onTimeout(pConn *thinktcp.TcpConn) {
 }
 
 func onConn(conn *thinktcp.TcpConn) {
-	log.Info("accept connection from %s\n", netutils.IPFromNetAddr(conn.RawConn().RemoteAddr()))
+	log.Info("accept connection from %s", netutils.IPFromNetAddr(conn.RawConn().RemoteAddr()))
 }
 
 func onClose(conn *thinktcp.TcpConn) {
-	log.Info("connection closed from %s\n", netutils.IPFromNetAddr(conn.RawConn().RemoteAddr()))
+	log.Info("connection closed from %s", netutils.IPFromNetAddr(conn.RawConn().RemoteAddr()))
 
 }
 
 func onMsg(conn *thinktcp.TcpConn, p *thinktcp.PingPacket) {
 	szTxt := thinkutils.StringUtils.BytesToString(p.Body)
-	log.Info("recved ping message from %s with %d bytes of data: %s\n", netutils.IPFromNetAddr(conn.RawConn().RemoteAddr()), p.BodyLen, szTxt)
+	log.Info("%s", szTxt)
 	conn.Write(p)
 }
 
