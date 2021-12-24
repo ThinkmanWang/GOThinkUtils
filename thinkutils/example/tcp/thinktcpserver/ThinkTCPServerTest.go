@@ -14,10 +14,6 @@ var (
 
 func onTimeout(pConn *thinktcp.TcpConn) {
 	log.Info("%p heartbeat timeout", pConn)
-
-	if false == pConn.Closed() {
-		pConn.Close()
-	}
 }
 
 func onConn(conn *thinktcp.TcpConn) {

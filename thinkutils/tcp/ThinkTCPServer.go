@@ -65,6 +65,11 @@ func (this *ThinkTCPServer) onProtocol() Protocol {
 }
 
 func (this *ThinkTCPServer) onTimeout(conn interface{}) {
+	pConn := conn.(*TcpConn)
+	if false == pConn.Closed() {
+		pConn.Close()
+	}
+
 	if this.OnTimeoutCallback != nil {
 		go this.OnTimeoutCallback(conn.(*TcpConn))
 	}
