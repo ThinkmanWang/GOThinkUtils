@@ -24,7 +24,7 @@ type ThinkTCPServer struct {
 func (this *ThinkTCPServer) Serve() {
 	this.m_pHeartbeatMgr = &thinkutils.HeartbeatMgr{}
 
-	if (this.HeartbeatTime <= 0) {
+	if this.HeartbeatTime <= 0 {
 		this.HeartbeatTime = 1800
 	}
 	this.m_pHeartbeatMgr.Init(this.HeartbeatTime, this.onTimeout)
@@ -57,6 +57,7 @@ func (this *ThinkTCPServer) onConn(c *TcpConn) {
 }
 
 func (this *ThinkTCPServer) onClose(c *TcpConn) {
+	this.m_pHeartbeatMgr.Remove(c)
 	if this.OnCloseCallback != nil {
 		go this.OnCloseCallback(c)
 	}

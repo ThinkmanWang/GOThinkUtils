@@ -26,6 +26,7 @@ func onConn(conn *thinktcp.TcpConn) {
 
 func onClose(conn *thinktcp.TcpConn) {
 	log.Info("connection closed from %s\n", netutils.IPFromNetAddr(conn.RawConn().RemoteAddr()))
+
 }
 
 func onMsg(conn *thinktcp.TcpConn, p *thinktcp.PingPacket) {
