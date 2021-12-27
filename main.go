@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 )
 
@@ -74,14 +75,16 @@ func buildFile(szEnv string, szDir string, szFile string, szExt string) error {
 
 	out, err := exec.Command("bash", "-c", szCmd).Output()
 	if err != nil {
+		fmt.Println(strings.TrimSpace(string(out)))
 		return err
 	}
 
-	fmt.Println(strings.TrimSpace(string(out)))
 	return nil
 }
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	
 	szPath, err := os.Getwd()
 	if err != nil {
 		log.Error(err.Error())
