@@ -84,7 +84,7 @@ func buildFile(szEnv string, szDir string, szFile string, szExt string) error {
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	
+
 	szPath, err := os.Getwd()
 	if err != nil {
 		log.Error(err.Error())
