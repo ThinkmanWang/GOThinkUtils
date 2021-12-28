@@ -11,6 +11,7 @@ var (
 )
 
 func worker(ch chan string) {
+	log.Info("%p", ch)
 	for {
 		szTxt := <-ch
 		log.Info(szTxt)
@@ -19,6 +20,7 @@ func worker(ch chan string) {
 
 func main() {
 	ch := make(chan string)
+	log.Info("%p", ch)
 	go worker(ch)
 
 	for {
