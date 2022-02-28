@@ -11,7 +11,7 @@ var (
 	log *logger.LocalLogger = logger.DefaultLogger()
 )
 
-func onMsg(addr net.Addr, data []byte) {
+func onMsg(pConn *net.UDPConn, addr net.Addr, data []byte) {
 	log.Info("<%s> %s", addr.String(), thinkutils.StringUtils.BytesToString(data))
 }
 

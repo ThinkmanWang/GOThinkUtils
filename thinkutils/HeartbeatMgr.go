@@ -28,10 +28,11 @@ func (this *HeartbeatMgr) start() {
 			if nTimestamp-node.(*ConnNode).Timestamp > int64(this.m_nTimeout) {
 				log.Info("Remove conn %p", node.(*ConnNode).Conn)
 
-				this.m_pConns.Remove(node.(*ConnNode).Conn)
 				if this.m_cbTimeout != nil {
 					go this.m_cbTimeout(node.(*ConnNode).Conn)
 				}
+
+				this.m_pConns.Remove(node.(*ConnNode).Conn)
 			}
 		}
 	}
