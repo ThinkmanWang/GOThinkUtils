@@ -1,8 +1,8 @@
 package main
 
 import (
-	"GOThinkUtils/thinkutils"
-	"GOThinkUtils/thinkutils/logger"
+	"github.com/ThinkmanWang/github.com/ThinkmanWang/GOThinkUtils/thinkutils"
+	"github.com/ThinkmanWang/github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
 	"fmt"
 	"strconv"
 )
@@ -49,11 +49,11 @@ func datetimeTest() {
 func md5Test() {
 	log.Info(thinkutils.MD5Utils.MD5String("HHH"))
 
-	szMd5 := thinkutils.MD5Utils.MD5File("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/GOThinkUtils")
+	szMd5 := thinkutils.MD5Utils.MD5File("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/github.com/ThinkmanWang/GOThinkUtils/github.com/ThinkmanWang/GOThinkUtils")
 	log.Info(szMd5)
 
 	chRet := make(chan string)
-	go thinkutils.MD5Utils.MD5FileCor("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/GOThinkUtils", chRet)
+	go thinkutils.MD5Utils.MD5FileCor("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/github.com/ThinkmanWang/GOThinkUtils/github.com/ThinkmanWang/GOThinkUtils", chRet)
 	szMd5 = <-chRet
 	log.Info(szMd5)
 }

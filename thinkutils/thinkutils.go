@@ -1,6 +1,6 @@
 package thinkutils
 
-import "GOThinkUtils/thinkutils/logger"
+import "github.com/ThinkmanWang/github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
 
 var (
 	log *logger.LocalLogger = logger.DefaultLogger()

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"GOThinkUtils/thinkutils"
-	"GOThinkUtils/thinkutils/logger"
+	"github.com/ThinkmanWang/github.com/ThinkmanWang/GOThinkUtils/thinkutils"
+	"github.com/ThinkmanWang/github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
 	"fmt"
 	"github.com/ahmetb/go-linq/v3"
 )

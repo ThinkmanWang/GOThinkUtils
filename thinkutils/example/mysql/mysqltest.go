@@ -1,8 +1,8 @@
 package main
 
 import (
-	"GOThinkUtils/thinkutils"
-	"GOThinkUtils/thinkutils/logger"
+	"github.com/ThinkmanWang/github.com/ThinkmanWang/GOThinkUtils/thinkutils"
+	"github.com/ThinkmanWang/github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
 	"fmt"
 	"sync"
 )
@@ -26,6 +26,12 @@ var (
 	}
 	fmt.Println(count)
 */
+
+type MyType struct {
+	AppId uint64 `json:"id" field:"app_id"`
+	Name string `json:"name" field:"name"`
+}
+
 func basicQueryJSON(wg *sync.WaitGroup) {
 
 	db := thinkutils.ThinkMysql.QuickConn()
@@ -34,28 +40,36 @@ func basicQueryJSON(wg *sync.WaitGroup) {
 		SELECT 
        		* 
 		FROM 
-		    sys_user 
-		WHERE 
-		    user_id > ?`, 0)
+		    t_game`)
 	if err != nil {
 		return
 	}
 
+	//lstRet := make([]MyType, 1)
+
+	for rows.Next() {
+		game := MyType{}
+
+		err = thinkutils.ThinkMysql.ScanRow(rows, &game)
+		if err != nil {
+			return
+		}
+
+		fmt.Println(game)
+	}
+
+
 	defer rows.Close()
 	defer wg.Done()
-
-	szRet := thinkutils.ThinkMysql.ToJSON(rows)
-	fmt.Println(szRet)
-	wg.Done()
 
 }
 
 func main() {
 	wg := sync.WaitGroup{}
-	for i := 0; i < 100; i++ {
-		wg.Add(1)
-		go basicQueryJSON(&wg)
-	}
+	//for i := 0; i < 100; i++ {
+	wg.Add(1)
+	go basicQueryJSON(&wg)
+	//}
 
 	wg.Wait()
 	//time.Sleep(10 * time.Second)

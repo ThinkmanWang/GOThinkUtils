@@ -1,7 +1,7 @@
 package thinktcp
 
 import (
-	"GOThinkUtils/thinkutils"
+	"github.com/ThinkmanWang/github.com/ThinkmanWang/GOThinkUtils/thinkutils"
 	"fmt"
 )
 

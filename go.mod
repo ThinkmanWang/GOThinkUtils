@@ -1,4 +1,4 @@
-module GOThinkUtils
+module github.com/ThinkmanWang/GOThinkUtils
 
 go 1.17
 

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"GOThinkUtils/thinkutils"
-	"GOThinkUtils/thinkutils/logger"
+	"github.com/ThinkmanWang/github.com/ThinkmanWang/GOThinkUtils/thinkutils"
+	"github.com/ThinkmanWang/github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
 )
 
 var (
@@ -29,5 +29,5 @@ func main() {
 	}
 
 	//log.Info("%p", pWatch)
-	pWatch.Watch("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/GOThinkUtils/temp")
+	pWatch.Watch("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/github.com/ThinkmanWang/GOThinkUtils/temp")
 }
