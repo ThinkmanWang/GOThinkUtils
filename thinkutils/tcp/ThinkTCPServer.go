@@ -1,7 +1,7 @@
 package thinktcp
 
 import (
-	"github.com/ThinkmanWang/github.com/ThinkmanWang/GOThinkUtils/thinkutils"
+	"github.com/ThinkmanWang/GOThinkUtils/thinkutils"
 	"sync"
 )
 

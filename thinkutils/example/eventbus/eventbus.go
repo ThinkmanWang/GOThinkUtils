@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ThinkmanWang/github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
+	"github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
 	"fmt"
 	"github.com/asaskevich/EventBus"
 	"sync"

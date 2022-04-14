@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/ThinkmanWang/github.com/ThinkmanWang/GOThinkUtils/thinkutils"
-	"github.com/ThinkmanWang/github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
-	"github.com/ThinkmanWang/github.com/ThinkmanWang/GOThinkUtils/thinkutils/tcp"
+	"github.com/ThinkmanWang/GOThinkUtils/thinkutils"
+	"github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
+	"github.com/ThinkmanWang/GOThinkUtils/thinkutils/tcp"
 	"fmt"
 	"github.com/ecofast/rtl/netutils"
 )
