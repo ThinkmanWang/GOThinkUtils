@@ -18,4 +18,5 @@ var (
 	JSONUtils    jsonutils
 	KafkaUtils   kafkautils
 	UDPUtils     udputils
+	Base64Utils  base64utils
 )
