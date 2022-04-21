@@ -71,3 +71,11 @@ func (this base64utils) StringToBase64(szTxt string) (string, error) {
 	str := base64.StdEncoding.EncodeToString([]byte(szTxt))
 	return str, nil
 }
+
+func (this base64utils) ByteToBase64(data []byte) (string, error) {
+	return base64.StdEncoding.EncodeToString(data), nil
+}
+
+func (this base64utils) Base64ToByte(szBase64 string) ([]byte, error) {
+	return base64.StdEncoding.DecodeString(szBase64)
+}
