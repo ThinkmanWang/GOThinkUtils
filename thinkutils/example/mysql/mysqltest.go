@@ -28,8 +28,8 @@ var (
 */
 
 type MyType struct {
-	AppId uint64 `json:"id" field:"app_id"`
-	Name string `json:"name" field:"name"`
+	AppId thinkutils.NullInt64 `json:"id" field:"app_id"`
+	Name thinkutils.NullString `json:"name" field:"name"`
 }
 
 func basicQueryJSON(wg *sync.WaitGroup) {
