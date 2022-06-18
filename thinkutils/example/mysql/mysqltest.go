@@ -35,6 +35,7 @@ type MyType struct {
 func basicQueryJSON(wg *sync.WaitGroup) {
 
 	db := thinkutils.ThinkMysql.QuickConn()
+	defer wg.Done()
 
 	rows, err := db.Query(`
 		SELECT 
@@ -44,6 +45,7 @@ func basicQueryJSON(wg *sync.WaitGroup) {
 	if err != nil {
 		return
 	}
+	defer rows.Close()
 
 	//lstRet := make([]MyType, 1)
 
@@ -59,8 +61,7 @@ func basicQueryJSON(wg *sync.WaitGroup) {
 	}
 
 
-	defer rows.Close()
-	defer wg.Done()
+
 
 }
 
