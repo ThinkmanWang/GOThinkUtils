@@ -34,6 +34,10 @@ func (this datetime) Hour() int {
 	return nRet
 }
 
+func (this datetime) Today() string {
+	return this.DiffDate(0)
+}
+
 func (this datetime) Yesterday() string {
 	return this.DiffDate(-1)
 }
