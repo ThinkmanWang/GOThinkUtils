@@ -93,6 +93,14 @@ func main() {
 
 	log.Info(szPath)
 
+	if "/" == szPath {
+		log.Error("You cannot run gobuild in /")
+		return
+	}
+
+	szBinPath := fmt.Sprintf("%s/bin", szPath)
+	thinkutils.FileUtils.RmDir(szBinPath)
+
 	lstFiles := allMainFile()
 	if nil == lstFiles || len(lstFiles) <= 0 {
 		log.Info("No file found return!")

@@ -32,6 +32,10 @@ func (this fileutils) MkDir(szPath string) {
 	}
 }
 
+func (this fileutils) RmDir(szPath string) {
+	_ = os.RemoveAll(szPath)
+}
+
 func (this fileutils) ReadLine(szPath string, callback OnReadLineCallback) {
 	inFile, err := os.Open(szPath)
 	if err != nil {
