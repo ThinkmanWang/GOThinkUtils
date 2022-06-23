@@ -3,6 +3,7 @@ package thinkutils
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/ini.v1"
@@ -184,6 +185,19 @@ func (this thinkmysql) ScanRow(rows *sql.Rows, dest interface{}) error {
 	return nil
 }
 
+func (this thinkmysql) LastInsertId(tx *sql.Tx) (int64, error) {
+	if nil == tx {
+		return 0, errors.New("tx could not be null")
+	}
+
+	var nId int64
+
+	if err := tx.QueryRow(`select LAST_INSERT_ID()`).Scan(&nId); err != nil {
+		return 0, err
+	}
+
+	return nId, nil
+}
 
 type NullBool struct {
 	sql.NullBool

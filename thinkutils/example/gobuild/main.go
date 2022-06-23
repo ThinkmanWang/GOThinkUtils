@@ -98,6 +98,21 @@ func main() {
 		return
 	}
 
+	if "/usr" == szPath {
+		log.Error("You cannot run gobuild in /usr")
+		return
+	}
+
+	if "/usr/local" == szPath {
+		log.Error("You cannot run gobuild in /usr/local")
+		return
+	}
+
+	if "/usr/local/share" == szPath {
+		log.Error("You cannot run gobuild in /usr/local/share")
+		return
+	}
+
 	szBinPath := fmt.Sprintf("%s/bin", szPath)
 	thinkutils.FileUtils.RmDir(szBinPath)
 
