@@ -199,6 +199,31 @@ func (this thinkmysql) LastInsertId(tx *sql.Tx) (int64, error) {
 	return nId, nil
 }
 
+func (this thinkmysql) TxBegin(db *sql.DB) (*sql.Tx) {
+	tx, err := db.Begin()
+	if err != nil {
+		return nil
+	}
+
+	return tx
+}
+
+func (this thinkmysql) TxRollback(tx *sql.Tx) {
+	if err := tx.Rollback(); err != nil {
+		log.Error(err.Error())
+	}
+}
+
+func (this thinkmysql) TxCommit(tx *sql.Tx) error {
+	err := tx.Commit()
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+
+	return nil
+}
+
 type NullBool struct {
 	sql.NullBool
 }

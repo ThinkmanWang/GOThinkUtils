@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/ThinkmanWang/GOThinkUtils/thinkutils"
 	"github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
-	"fmt"
 	"sync"
 )
 
@@ -28,7 +27,7 @@ var (
 */
 
 type MyType struct {
-	AppId thinkutils.NullInt64 `json:"id" field:"app_id"`
+	Id thinkutils.NullInt64 `json:"id" field:"id"`
 	Name thinkutils.NullString `json:"name" field:"name"`
 }
 
@@ -39,9 +38,9 @@ func basicQueryJSON(wg *sync.WaitGroup) {
 
 	rows, err := db.Query(`
 		SELECT 
-       		* 
+       		id, name 
 		FROM 
-		    t_game`)
+		    t_test`)
 	if err != nil {
 		return
 	}
@@ -54,15 +53,12 @@ func basicQueryJSON(wg *sync.WaitGroup) {
 
 		err = thinkutils.ThinkMysql.ScanRow(rows, &game)
 		if err != nil {
+			log.Error(err.Error())
 			return
 		}
 
-		fmt.Println(game)
+		log.Info("%s", thinkutils.JSONUtils.ToJson(game))
 	}
-
-
-
-
 }
 
 func main() {
