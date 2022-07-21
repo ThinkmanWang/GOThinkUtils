@@ -100,6 +100,8 @@ func (this thinkredis) Lock(rDB *redis.Client, szName string, nAcquireTimeout in
 		if DateTime.Timestamp() >= nEndTime {
 			break
 		}
+
+		time.Sleep(1 * time.Second)
 	}
 
 	return ""
