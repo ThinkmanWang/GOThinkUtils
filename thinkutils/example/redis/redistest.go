@@ -35,17 +35,21 @@ func lockTest(wg *sync.WaitGroup) {
 
 	rdb := thinkutils.ThinkRedis.QuickConn()
 	szVal := thinkutils.ThinkRedis.Lock(rdb, "mylock", 10, 60)
-	log.Info(szVal)
-	thinkutils.ThinkRedis.ReleaseLock(rdb, "mylock", szVal)
+	if thinkutils.StringUtils.IsEmpty(szVal) {
+		log.Info("UNLOCK")
+	} else {
+		log.Info("LOCK")
+	}
+	//thinkutils.ThinkRedis.ReleaseLock(rdb, "mylock", szVal)
 }
 
 func main() {
 	wg := sync.WaitGroup{}
-	for i := 0; i < 1024; i++ {
-		wg.Add(1)
-		go redisTest(&wg)
-	}
-
+	//for i := 0; i < 1024; i++ {
+	//	wg.Add(1)
+	//	go redisTest(&wg)
+	//}
+	//
 	wg.Add(1)
 	go lockTest(&wg)
 

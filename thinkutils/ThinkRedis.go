@@ -89,8 +89,11 @@ func (this thinkredis) Lock(rDB *redis.Client, szName string, nAcquireTimeout in
 	nEndTime := DateTime.Timestamp() + int64(nAcquireTimeout)
 
 	for true {
-		err := rDB.SetNX(context.Background(), szLockName, szVal, time.Duration(nLockTimeout)*time.Second).Err()
-		if nil == err {
+		ret := rDB.SetNX(context.Background(), szLockName, szVal, time.Duration(nLockTimeout)*time.Second)
+		//szRet := ret.String()
+		//log.Info(szRet)
+		bSuccess, err := ret.Result()
+		if nil == err && true == bSuccess {
 			return szVal
 		}
 
