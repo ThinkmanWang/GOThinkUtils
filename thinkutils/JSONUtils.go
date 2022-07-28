@@ -19,6 +19,6 @@ func (this jsonutils) FromJson(szJson string, v interface{}) error {
 }
 
 func (this jsonutils) IsJSONString(s string) bool {
-	var js string
+	var js map[string]interface{}
 	return json.Unmarshal([]byte(s), &js) == nil
 }
