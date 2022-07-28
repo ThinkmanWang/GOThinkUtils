@@ -17,3 +17,8 @@ func (this jsonutils) ToJson(v interface{}) string {
 func (this jsonutils) FromJson(szJson string, v interface{}) error {
 	return json.Unmarshal(StringUtils.StringToBytes(szJson), v)
 }
+
+func (this jsonutils) IsJSONString(s string) bool {
+	var js string
+	return json.Unmarshal([]byte(s), &js) == nil
+}
