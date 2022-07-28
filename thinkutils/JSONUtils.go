@@ -22,3 +22,13 @@ func (this jsonutils) IsJSONString(s string) bool {
 	var js map[string]interface{}
 	return json.Unmarshal([]byte(s), &js) == nil
 }
+
+func (this jsonutils) TrimJSON(szJson string) string {
+	var js map[string]interface{}
+	err := json.Unmarshal([]byte(szJson), &js)
+	if err != nil {
+		return szJson
+	}
+
+	return this.ToJson(js)
+}
