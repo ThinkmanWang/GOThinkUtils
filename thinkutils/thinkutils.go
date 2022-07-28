@@ -19,4 +19,5 @@ var (
 	KafkaUtils   kafkautils
 	UDPUtils     udputils
 	Base64Utils  base64utils
+	HttpUtils httputils
 )
