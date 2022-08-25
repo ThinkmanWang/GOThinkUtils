@@ -37,17 +37,30 @@ func (this structutis) FieldAddrByTag(pData interface{}, szKey, szVal string) (i
 		return nil, false
 	}
 
-	structVal := reflect.ValueOf(pData)
-
 	szFieldName, bFound := this.FieldNameByTag(pData, szKey, szVal)
 	if false == bFound {
 		return nil, false
 	}
 
-	fieldVal := structVal.FieldByName(szFieldName)
-	if !fieldVal.IsValid() {
-		return nil, false
-	}
-
-	return fieldVal.Addr().Interface(), true
+	return reflect.ValueOf(pData).Elem().FieldByName(szFieldName).Addr().Interface(), true
 }
+
+//func (this structutis) FieldAddrByTag(pData interface{}, szKey, szVal string) (interface{}, bool) {
+//	if nil == pData || StringUtils.IsEmpty(szKey) || StringUtils.IsEmpty(szVal) {
+//		return nil, false
+//	}
+//
+//	structVal := reflect.ValueOf(pData)
+//
+//	szFieldName, bFound := this.FieldNameByTag(pData, szKey, szVal)
+//	if false == bFound {
+//		return nil, false
+//	}
+//
+//	fieldVal := structVal.FieldByName(szFieldName)
+//	if !fieldVal.IsValid() {
+//		return nil, false
+//	}
+//
+//	return fieldVal.Addr().Interface(), true
+//}

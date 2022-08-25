@@ -16,6 +16,8 @@ type ConfigUrl struct {
 	Name        thinkutils.NullString `json:"name" field:"name"`
 	ChannelName thinkutils.NullString `json:"channelName" field:"channel_name"`
 	PackageName thinkutils.NullString `json:"packageName" field:"package_name"`
+	//ConfigUrl    thinkutils.NullString `json:"configUrl" field:"config_url"`
+	//ShowCallback thinkutils.NullString `json:"showCallback" field:"show_callback"`
 }
 
 func scanTest1() {
