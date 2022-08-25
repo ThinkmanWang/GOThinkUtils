@@ -19,5 +19,7 @@ var (
 	KafkaUtils   kafkautils
 	UDPUtils     udputils
 	Base64Utils  base64utils
-	HttpUtils httputils
+	HttpUtils    httputils
+	SetUtils     setutils
+	StructUtils  structutis
 )

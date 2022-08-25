@@ -185,6 +185,32 @@ func (this thinkmysql) ScanRow(rows *sql.Rows, dest interface{}) error {
 	return nil
 }
 
+func (this thinkmysql) ScanRowPlus(rows *sql.Rows, dest interface{}) error {
+	columnNames, err := rows.Columns()
+	if err != nil {
+		return err
+	}
+
+	//s := reflect.ValueOf(dest).Elem()
+	//numCols := s.NumField()
+	columns := make([]interface{}, len(columnNames))
+	for i := 0; i < len(columnNames); i++ {
+		addr, bExists := StructUtils.FieldAddrByTag(dest, "field", columnNames[i])
+		if bExists {
+			columns[i] = addr
+		} else {
+			columns[i] = new(interface{})
+		}
+	}
+
+	err = rows.Scan(columns...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (this thinkmysql) LastInsertId(tx *sql.Tx) (int64, error) {
 	if nil == tx {
 		return 0, errors.New("tx could not be null")
@@ -199,7 +225,7 @@ func (this thinkmysql) LastInsertId(tx *sql.Tx) (int64, error) {
 	return nId, nil
 }
 
-func (this thinkmysql) TxBegin(db *sql.DB) (*sql.Tx) {
+func (this thinkmysql) TxBegin(db *sql.DB) *sql.Tx {
 	tx, err := db.Begin()
 	if err != nil {
 		return nil
