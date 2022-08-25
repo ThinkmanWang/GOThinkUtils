@@ -7,7 +7,6 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/ini.v1"
-	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -168,24 +167,24 @@ func (this thinkmysql) ToJSON(rows *sql.Rows) string {
 	return szJson
 }
 
+//func (this thinkmysql) ScanRow(rows *sql.Rows, dest interface{}) error {
+//	s := reflect.ValueOf(dest).Elem()
+//	numCols := s.NumField()
+//	columns := make([]interface{}, numCols)
+//	for i := 0; i < numCols; i++ {
+//		field := s.Field(i)
+//		columns[i] = field.Addr().Interface()
+//	}
+//
+//	err := rows.Scan(columns...)
+//	if err != nil {
+//		return err
+//	}
+//
+//	return nil
+//}
+
 func (this thinkmysql) ScanRow(rows *sql.Rows, dest interface{}) error {
-	s := reflect.ValueOf(dest).Elem()
-	numCols := s.NumField()
-	columns := make([]interface{}, numCols)
-	for i := 0; i < numCols; i++ {
-		field := s.Field(i)
-		columns[i] = field.Addr().Interface()
-	}
-
-	err := rows.Scan(columns...)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (this thinkmysql) ScanRowPlus(rows *sql.Rows, dest interface{}) error {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return err

@@ -48,7 +48,7 @@ func scanTest1() {
 	for rows.Next() {
 		game := &ConfigUrl{}
 
-		err = thinkutils.ThinkMysql.ScanRowPlus(rows, game)
+		err = thinkutils.ThinkMysql.ScanRow(rows, game)
 		if err != nil {
 			log.Error(err.Error())
 			return
