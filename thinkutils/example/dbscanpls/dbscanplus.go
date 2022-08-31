@@ -10,9 +10,18 @@ var (
 	log *logger.LocalLogger = logger.DefaultLogger()
 )
 
+type Base struct {
+	Id thinkutils.NullInt64 `json:"id" field:"id"`
+}
+
+type Base1 struct {
+	Base
+	ShowName thinkutils.NullString `json:"showName" field:"show_name"`
+}
+
 type ConfigUrl struct {
-	Id          thinkutils.NullInt64  `json:"id" field:"id"`
-	ShowName    thinkutils.NullString `json:"showName" field:"show_name"`
+	Base1
+
 	Name        thinkutils.NullString `json:"name" field:"name"`
 	ChannelName thinkutils.NullString `json:"channelName" field:"channel_name"`
 	PackageName thinkutils.NullString `json:"packageName" field:"package_name"`
@@ -59,16 +68,9 @@ func scanTest1() {
 	}
 }
 
-func scructTest() {
-	config := ConfigUrl{}
-	szName, bExists := thinkutils.StructUtils.FieldNameByTag(&config, "field", "id")
-	log.Info("%o => %s", bExists, szName)
-}
-
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	log.Info("Hello World")
 
-	//scructTest()
 	scanTest1()
 }

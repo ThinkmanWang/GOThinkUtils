@@ -1,49 +1,46 @@
 package thinkutils
 
 import (
+	"github.com/ThinkmanWang/GOThinkUtils/thinkutils/reflectx"
 	"reflect"
-	"strings"
 )
 
 type structutis struct {
 }
 
-func (this structutis) FieldNameByTag(pData interface{}, szKey, szVal string) (string, bool) {
-
-	if nil == pData || StringUtils.IsEmpty(szKey) || StringUtils.IsEmpty(szVal) {
-		return "", false
+func (this structutis) FieldAddrByTag(pData interface{}, szTag, szVal string) (interface{}, bool) {
+	if nil == pData || StringUtils.IsEmpty(szTag) || StringUtils.IsEmpty(szVal) {
+		return nil, false
 	}
 
-	v := reflect.ValueOf(pData)
+	v := reflect.Indirect(reflect.ValueOf(pData))
 
-	rt := reflect.Indirect(v).Type()
-	if rt.Kind() != reflect.Struct {
-		return "", false
-	}
+	defaultMapper := reflectx.NewMapper(szTag)
+	m := defaultMapper.FieldMap(v)
 
-	for i := 0; i < rt.NumField(); i++ {
-		f := rt.Field(i)
-		v := strings.Split(f.Tag.Get(szKey), ",")[0] // use split to ignore tag "options" like omitempty, etc.
-		if v == szVal {
-			return f.Name, true
+	for key, val := range m {
+		//log.Info("%s", key)
+
+		if key == szVal {
+			return val.Addr().Interface(), true
 		}
 	}
 
 	return "", false
 }
 
-func (this structutis) FieldAddrByTag(pData interface{}, szKey, szVal string) (interface{}, bool) {
-	if nil == pData || StringUtils.IsEmpty(szKey) || StringUtils.IsEmpty(szVal) {
-		return nil, false
-	}
-
-	szFieldName, bFound := this.FieldNameByTag(pData, szKey, szVal)
-	if false == bFound {
-		return nil, false
-	}
-
-	return reflect.ValueOf(pData).Elem().FieldByName(szFieldName).Addr().Interface(), true
-}
+//func (this structutis) FieldAddrByTag(pData interface{}, szKey, szVal string) (interface{}, bool) {
+//	if nil == pData || StringUtils.IsEmpty(szKey) || StringUtils.IsEmpty(szVal) {
+//		return nil, false
+//	}
+//
+//	szFieldName, bFound := this.FieldNameByTag(pData, szKey, szVal)
+//	if false == bFound {
+//		return nil, false
+//	}
+//
+//	return reflect.ValueOf(pData).Elem().FieldByName(szFieldName).Addr().Interface(), true
+//}
 
 //func (this structutis) FieldAddrByTag(pData interface{}, szKey, szVal string) (interface{}, bool) {
 //	if nil == pData || StringUtils.IsEmpty(szKey) || StringUtils.IsEmpty(szVal) {
