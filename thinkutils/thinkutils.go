@@ -23,3 +23,37 @@ var (
 	SetUtils     setutils
 	StructUtils  structutis
 )
+
+func ListRemoveAt[T int8 | int16 | int32 | int64 | int | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64 | string | any](lstData []T, nIndex int) []T {
+	if nil == lstData {
+		return nil
+	}
+
+	if nIndex < 0 || nIndex > len(lstData) {
+		return nil
+	}
+
+	return append(lstData[:nIndex], lstData[nIndex+1:]...)
+}
+
+func MinVal[T int8 | int16 | int32 | int64 | int | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64](lstVal ...T) T {
+	nMin := lstVal[0]
+	for _, nVal := range lstVal {
+		if nVal < nMin {
+			nMin = nVal
+		}
+	}
+
+	return nMin
+}
+
+func MaxVal[T int8 | int16 | int32 | int64 | int | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64](lstVal ...T) T {
+	nMin := lstVal[0]
+	for _, nVal := range lstVal {
+		if nVal > nMin {
+			nMin = nVal
+		}
+	}
+
+	return nMin
+}
