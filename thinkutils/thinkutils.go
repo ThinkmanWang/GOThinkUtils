@@ -37,23 +37,23 @@ func ListRemoveAt[T int8 | int16 | int32 | int64 | int | uint | uint8 | uint16 |
 }
 
 func MinVal[T int8 | int16 | int32 | int64 | int | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64](lstVal ...T) T {
-	nMin := lstVal[0]
+	nRet := lstVal[0]
 	for _, nVal := range lstVal {
-		if nVal < nMin {
-			nMin = nVal
+		if nVal < nRet {
+			nRet = nVal
 		}
 	}
 
-	return nMin
+	return nRet
 }
 
 func MaxVal[T int8 | int16 | int32 | int64 | int | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64](lstVal ...T) T {
-	nMin := lstVal[0]
+	nRet := lstVal[0]
 	for _, nVal := range lstVal {
-		if nVal > nMin {
-			nMin = nVal
+		if nVal > nRet {
+			nRet = nVal
 		}
 	}
 
-	return nMin
+	return nRet
 }
