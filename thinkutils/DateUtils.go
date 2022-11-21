@@ -61,6 +61,24 @@ func (this datetime) TimeStampToDate(nTimestamp int64) string {
 }
 
 func (this datetime) DateToTimestamp(szDate string) int64 {
+	return this.DateToTimestampCST(szDate)
+}
+
+func (this datetime) DateToTimestampCST(szDate string) int64 {
+	location, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		return 0
+	}
+
+	t, err := time.ParseInLocation("2006-01-02", szDate, location)
+	if err != nil {
+		return 0
+	}
+
+	return t.Unix()
+}
+
+func (this datetime) DateToTimestampUTC(szDate string) int64 {
 	t, err := time.Parse("2006-01-02", szDate)
 	if err != nil {
 		return 0
@@ -70,7 +88,25 @@ func (this datetime) DateToTimestamp(szDate string) int64 {
 }
 
 func (this datetime) DateTimeToTimestamp(szDate string) int64 {
+	return this.DateTimeToTimestampCST(szDate)
+}
+
+func (this datetime) DateTimeToTimestampUTC(szDate string) int64 {
 	t, err := time.Parse("2006-01-02 15:04:05", szDate)
+	if err != nil {
+		return 0
+	}
+
+	return t.Unix()
+}
+
+func (this datetime) DateTimeToTimestampCST(szDate string) int64 {
+	location, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		return 0
+	}
+
+	t, err := time.ParseInLocation("2006-01-02 15:04:05", szDate, location)
 	if err != nil {
 		return 0
 	}

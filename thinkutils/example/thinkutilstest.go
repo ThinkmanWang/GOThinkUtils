@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"github.com/ThinkmanWang/GOThinkUtils/thinkutils"
 	"github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
-	"fmt"
 	"strconv"
 )
 
@@ -31,6 +31,7 @@ func datetimeTest() {
 	fmt.Println(thinkutils.DateTime.DiffDate(-3))
 	fmt.Println(thinkutils.DateTime.DiffDate(4))
 	fmt.Println(thinkutils.DateTime.DateToTimestamp("2021-12-06"))
+	fmt.Println(thinkutils.DateTime.DateTimeToTimestamp("2022-11-21 15:00:00"))
 	fmt.Println(thinkutils.DateTime.FirstDayOfMonth("2021-10-20"))
 	fmt.Println(thinkutils.DateTime.LastDayOfMonth("2021-03-01"))
 
