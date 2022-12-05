@@ -8,14 +8,14 @@ type randutils struct {
 }
 
 func (this randutils) RandInt(nMin int, nMax int) int {
-	return rand.Intn(nMax-nMin) + nMin
+	return rand.Intn(nMax-nMin+1) + nMin
 }
 
 func (this randutils) RandPasssword(nLen int) string {
 	szBase := "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz0123456789"
 	szRet := ""
 	for i := 0; i < nLen; i++ {
-		ch := szBase[this.RandInt(0, len(szBase))]
+		ch := szBase[this.RandInt(0, len(szBase)-1)]
 		szRet += string(ch)
 	}
 
