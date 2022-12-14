@@ -20,6 +20,54 @@ var (
 	g_mapMysqlDB map[string]*sql.DB
 )
 
+type ThinkTxCommitHandler func(pData any) error
+
+type thinktxnode struct {
+	pData any
+
+	pFunc ThinkTxCommitHandler
+}
+
+type ThinkTx struct {
+	*sql.Tx
+
+	m_lstCommitHandler []*thinktxnode
+}
+
+func (this *ThinkTx) Commit() error {
+	err := this.Tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	if nil == this.m_lstCommitHandler || len(this.m_lstCommitHandler) <= 0 {
+		return nil
+	}
+
+	wg := sync.WaitGroup{}
+	for _, pNode := range this.m_lstCommitHandler {
+		wg.Add(1)
+
+		go func(pNode *thinktxnode) {
+			defer wg.Done()
+
+			_ = pNode.pFunc(pNode.pData)
+		}(pNode)
+	}
+	wg.Wait()
+
+	return nil
+}
+
+func (this *ThinkTx) DoAfterCommit(pData any, pFunc ThinkTxCommitHandler) {
+	this.m_lstCommitHandler = append(this.m_lstCommitHandler, &thinktxnode{
+		pFunc: pFunc,
+		pData: pData,
+	})
+}
+
+//===============================//
+
 func (this thinkmysql) makeConn(szHost string,
 	nPort int,
 	szUser string,
@@ -210,7 +258,7 @@ func (this thinkmysql) ScanRow(rows *sql.Rows, dest interface{}) error {
 	return nil
 }
 
-func (this thinkmysql) LastInsertId(tx *sql.Tx) (int64, error) {
+func (this thinkmysql) LastInsertId(tx *ThinkTx) (int64, error) {
 	if nil == tx {
 		return 0, errors.New("tx could not be null")
 	}
@@ -224,22 +272,25 @@ func (this thinkmysql) LastInsertId(tx *sql.Tx) (int64, error) {
 	return nId, nil
 }
 
-func (this thinkmysql) TxBegin(db *sql.DB) *sql.Tx {
+func (this thinkmysql) TxBegin(db *sql.DB) *ThinkTx {
 	tx, err := db.Begin()
 	if err != nil {
 		return nil
 	}
 
-	return tx
+	return &ThinkTx{
+		Tx:                 tx,
+		m_lstCommitHandler: make([]*thinktxnode, 0),
+	}
 }
 
-func (this thinkmysql) TxRollback(tx *sql.Tx) {
+func (this thinkmysql) TxRollback(tx *ThinkTx) {
 	if err := tx.Rollback(); err != nil {
 		log.Error(err.Error())
 	}
 }
 
-func (this thinkmysql) TxCommit(tx *sql.Tx) error {
+func (this thinkmysql) TxCommit(tx *ThinkTx) error {
 	err := tx.Commit()
 	if err != nil {
 		log.Error(err.Error())
