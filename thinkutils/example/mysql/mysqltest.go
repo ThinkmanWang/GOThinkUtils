@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"github.com/ThinkmanWang/GOThinkUtils/thinkutils"
 	"github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
 	"sync"
@@ -27,7 +28,7 @@ var (
 */
 
 type MyType struct {
-	Id thinkutils.NullInt64 `json:"id" field:"id"`
+	Id   thinkutils.NullInt64  `json:"id" field:"id"`
 	Name thinkutils.NullString `json:"name" field:"name"`
 }
 
@@ -61,14 +62,47 @@ func basicQueryJSON(wg *sync.WaitGroup) {
 	}
 }
 
-func main() {
-	wg := sync.WaitGroup{}
-	//for i := 0; i < 100; i++ {
-	wg.Add(1)
-	go basicQueryJSON(&wg)
-	//}
+func insertTest() error {
+	db := thinkutils.ThinkMysql.QuickConn()
 
-	wg.Wait()
+	tx := thinkutils.ThinkMysql.TxBegin(db)
+	_, err := tx.Exec(`
+		INSERT INTO 
+		    t_test (name)
+		VALUES
+			(?)
+	`, thinkutils.DateTime.CurDatetime())
+
+	if err != nil {
+		return err
+	}
+
+	tx.DoBeforeCommit(nil, func(pData any) error {
+		log.Info("HAHAHA FAILED")
+		return nil
+	})
+	tx.DoBeforeCommit(nil, func(pData any) error {
+		log.Info("HAHAHA SUCCESS")
+		return nil
+	})
+
+	tx.DoAfterCommit(nil, func(pData any) error {
+		log.Info("HAHAHA SUCCESS")
+		return errors.New("HAHAHA SUCCESS")
+	})
+
+	return thinkutils.ThinkMysql.TxCommit(tx)
+}
+
+func main() {
+	insertTest()
+	//wg := sync.WaitGroup{}
+	////for i := 0; i < 100; i++ {
+	//wg.Add(1)
+	//go basicQueryJSON(&wg)
+	////}
+	//
+	//wg.Wait()
 	//time.Sleep(10 * time.Second)
 	//basicQueryJSON()
 }

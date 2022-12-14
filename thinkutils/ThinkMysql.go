@@ -31,21 +31,41 @@ type thinktxnode struct {
 type ThinkTx struct {
 	*sql.Tx
 
-	m_lstCommitHandler []*thinktxnode
+	m_lstBeforeCommitHandler []*thinktxnode
+	m_lstAfterCommitHandler  []*thinktxnode
 }
 
 func (this *ThinkTx) Commit() error {
+	//before commit
+	if len(this.m_lstBeforeCommitHandler) > 0 {
+		lstCh := make(chan error, len(this.m_lstBeforeCommitHandler))
+		for _, pNode := range this.m_lstBeforeCommitHandler {
+			go func(pNode *thinktxnode, c chan error) {
+				c <- pNode.pFunc(pNode.pData)
+			}(pNode, lstCh)
+		}
+
+		for i := 0; i < len(this.m_lstBeforeCommitHandler); i++ {
+			err := <-lstCh
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	//commit
 	err := this.Tx.Commit()
 	if err != nil {
 		return err
 	}
 
-	if nil == this.m_lstCommitHandler || len(this.m_lstCommitHandler) <= 0 {
+	//after commit
+	if nil == this.m_lstAfterCommitHandler || len(this.m_lstAfterCommitHandler) <= 0 {
 		return nil
 	}
 
 	wg := sync.WaitGroup{}
-	for _, pNode := range this.m_lstCommitHandler {
+	for _, pNode := range this.m_lstAfterCommitHandler {
 		wg.Add(1)
 
 		go func(pNode *thinktxnode) {
@@ -59,8 +79,15 @@ func (this *ThinkTx) Commit() error {
 	return nil
 }
 
+func (this *ThinkTx) DoBeforeCommit(pData any, pFunc ThinkTxCommitHandler) {
+	this.m_lstBeforeCommitHandler = append(this.m_lstBeforeCommitHandler, &thinktxnode{
+		pFunc: pFunc,
+		pData: pData,
+	})
+}
+
 func (this *ThinkTx) DoAfterCommit(pData any, pFunc ThinkTxCommitHandler) {
-	this.m_lstCommitHandler = append(this.m_lstCommitHandler, &thinktxnode{
+	this.m_lstAfterCommitHandler = append(this.m_lstAfterCommitHandler, &thinktxnode{
 		pFunc: pFunc,
 		pData: pData,
 	})
@@ -279,8 +306,9 @@ func (this thinkmysql) TxBegin(db *sql.DB) *ThinkTx {
 	}
 
 	return &ThinkTx{
-		Tx:                 tx,
-		m_lstCommitHandler: make([]*thinktxnode, 0),
+		Tx:                       tx,
+		m_lstBeforeCommitHandler: make([]*thinktxnode, 0),
+		m_lstAfterCommitHandler:  make([]*thinktxnode, 0),
 	}
 }
 
