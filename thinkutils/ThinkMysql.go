@@ -79,12 +79,12 @@ func (this *ThinkTx) Commit() error {
 	return nil
 }
 
-func (this *ThinkTx) DoBeforeCommit(pData any, pFunc ThinkTxCommitHandler) {
-	this.m_lstBeforeCommitHandler = append(this.m_lstBeforeCommitHandler, &thinktxnode{
-		pFunc: pFunc,
-		pData: pData,
-	})
-}
+//func (this *ThinkTx) DoBeforeCommit(pData any, pFunc ThinkTxCommitHandler) {
+//	this.m_lstBeforeCommitHandler = append(this.m_lstBeforeCommitHandler, &thinktxnode{
+//		pFunc: pFunc,
+//		pData: pData,
+//	})
+//}
 
 func (this *ThinkTx) DoAfterCommit(pData any, pFunc ThinkTxCommitHandler) {
 	this.m_lstAfterCommitHandler = append(this.m_lstAfterCommitHandler, &thinktxnode{

@@ -77,14 +77,14 @@ func insertTest() error {
 		return err
 	}
 
-	tx.DoBeforeCommit(nil, func(pData any) error {
-		log.Info("HAHAHA FAILED")
-		return nil
-	})
-	tx.DoBeforeCommit(nil, func(pData any) error {
-		log.Info("HAHAHA SUCCESS")
-		return nil
-	})
+	//tx.DoBeforeCommit(nil, func(pData any) error {
+	//	log.Info("HAHAHA FAILED")
+	//	return nil
+	//})
+	//tx.DoBeforeCommit(nil, func(pData any) error {
+	//	log.Info("HAHAHA SUCCESS")
+	//	return nil
+	//})
 
 	tx.DoAfterCommit(nil, func(pData any) error {
 		log.Info("HAHAHA SUCCESS")
