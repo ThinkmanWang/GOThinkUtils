@@ -1,6 +1,10 @@
 package thinkutils
 
-import "github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
+import (
+	"errors"
+	"fmt"
+	"github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
+)
 
 var (
 	log *logger.LocalLogger = logger.DefaultLogger()
@@ -56,4 +60,25 @@ func MaxVal[T int8 | int16 | int32 | int64 | int | uint | uint8 | uint16 | uint3
 	}
 
 	return nRet
+}
+
+func NewError(format string, a ...any) error {
+	szTxt := fmt.Sprintf(format, a...)
+	return errors.New(szTxt)
+}
+
+func NewThinkError(format string, a ...any) *ThinkError {
+	szTxt := fmt.Sprintf(format, a...)
+	return &ThinkError{
+		Code: 500,
+		Msg:  szTxt,
+	}
+}
+
+func NewThinkErrorEx(nCode int64, format string, a ...any) *ThinkError {
+	szTxt := fmt.Sprintf(format, a...)
+	return &ThinkError{
+		Code: nCode,
+		Msg:  szTxt,
+	}
 }
