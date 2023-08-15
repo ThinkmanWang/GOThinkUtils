@@ -8,12 +8,13 @@ import (
 	"time"
 )
 
-type FuncRefreshCache func() error
+type FuncRefreshCache func(pUserData any) error
 
 type CacheNode struct {
 	m_nExpireAt int64
 	m_pFunc     FuncRefreshCache
 	m_pData     any
+	m_pUserData any
 }
 
 type ThinkMemCache struct {
@@ -50,7 +51,7 @@ func (this *ThinkMemCache) Start() {
 	}()
 }
 
-func (this *ThinkMemCache) Set(szKey string, nExpire int64, pData any, pFunc FuncRefreshCache) {
+func (this *ThinkMemCache) Set(szKey string, nExpire int64, pData any, pUserData any, pFunc FuncRefreshCache) {
 	nExpireAt := int64(0)
 	if nExpire > 0 {
 		nExpireAt = DateTime.Timestamp() + nExpire
@@ -60,6 +61,7 @@ func (this *ThinkMemCache) Set(szKey string, nExpire int64, pData any, pFunc Fun
 		m_nExpireAt: nExpireAt,
 		m_pData:     pData,
 		m_pFunc:     pFunc,
+		m_pUserData: pUserData,
 	}
 
 	this.m_lock.Lock()
@@ -134,7 +136,7 @@ func (this *ThinkMemCache) Refresh() {
 				defer wg.Done()
 
 				nStart := DateTime.TimestampMs()
-				if err := pFunc(); err != nil {
+				if err := pFunc(v.m_pUserData); err != nil {
 					logger.Warn(err.Error())
 				}
 				logger.Info(">>>>Call %s for cache, cost %d<<<<", gort.FuncForPC(reflect.ValueOf(pFunc).Pointer()).Name(), DateTime.TimestampMs()-nStart)
