@@ -45,6 +45,7 @@ require (
 	github.com/rs/xid v1.2.1 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
+	github.com/yinheli/mahonia v0.0.0-20131226213531-0eef680515cc // indirect
 	golang.org/x/crypto v0.0.0-20201216223049-8b5274cf687f // indirect
 	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781 // indirect
 	golang.org/x/sys v0.0.0-20210423082822-04245dca01da // indirect

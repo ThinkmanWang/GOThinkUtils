@@ -2,8 +2,10 @@ package thinkutils
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
+	"os"
 )
 
 type httputils struct {
@@ -14,7 +16,7 @@ func (this httputils) Get(szUrl string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer func() { _ = resp.Body.Close()}()
+	defer func() { _ = resp.Body.Close() }()
 
 	byteBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -35,7 +37,7 @@ func (this httputils) PostForm(szUrl string, data map[string]string) (string, er
 	if err != nil {
 		return "", err
 	}
-	defer func() { _ = resp.Body.Close()}()
+	defer func() { _ = resp.Body.Close() }()
 
 	byteBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -57,7 +59,7 @@ func (this httputils) PostJSON(szUrl, szJson string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer func() { _ = resp.Body.Close()}()
+	defer func() { _ = resp.Body.Close() }()
 
 	byteBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -83,7 +85,7 @@ func (this httputils) GetWithHeader(szUrl string, mapHeader map[string]string) (
 	if err != nil {
 		return "", err
 	}
-	defer func() { _ = resp.Body.Close()}()
+	defer func() { _ = resp.Body.Close() }()
 
 	byteBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -109,7 +111,7 @@ func (this httputils) PostJSONWithHeader(szUrl string, mapHeader map[string]stri
 	if err != nil {
 		return "", err
 	}
-	defer func() { _ = resp.Body.Close()}()
+	defer func() { _ = resp.Body.Close() }()
 
 	byteBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -117,4 +119,33 @@ func (this httputils) PostJSONWithHeader(szUrl string, mapHeader map[string]stri
 	}
 
 	return StringUtils.BytesToString(byteBody), nil
+}
+
+func (this httputils) DownloadFile(szFile, szUrl string) error {
+	// Create the file
+	out, err := os.Create(szFile)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Get the data
+	resp, err := http.Get(szUrl)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Check server response
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("bad status: %s", resp.Status)
+	}
+
+	// Writer the body to file
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
