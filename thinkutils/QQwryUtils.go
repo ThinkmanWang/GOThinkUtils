@@ -65,11 +65,12 @@ func (this qqwryutils) downloadQqwry(szAppCode string) (string, error) {
 func (this qqwryutils) Init(szAppCode string) error {
 	szFile, err := this.downloadQqwry(szAppCode)
 	if err != nil {
-		return err
+		log.Warn(err.Error())
+		szFile = "qqwry.dat"
 	}
 
 	pDat := qqwry.NewQQwry(szFile)
-	GetMemCacheInstance().Set("QQWRY_DAT", 120, pDat, szAppCode, this.RefreshData)
+	GetMemCacheInstance().Set("QQWRY_DAT", 86400, pDat, szAppCode, this.RefreshData)
 
 	return nil
 }
@@ -87,7 +88,7 @@ func (this qqwryutils) RefreshData(pUserData any) error {
 	}
 
 	pDat := qqwry.NewQQwry(szFile)
-	GetMemCacheInstance().Set("QQWRY_DAT", 120, pDat, szAppCode, this.RefreshData)
+	GetMemCacheInstance().Set("QQWRY_DAT", 86400, pDat, szAppCode, this.RefreshData)
 
 	return nil
 }
