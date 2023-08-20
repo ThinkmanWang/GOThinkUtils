@@ -15,6 +15,11 @@ func main() {
 		return
 	}
 
+	if err := thinkutils.QQwryUtils.RefreshData("f4672ec4a55a436c87f7ce1f1a631ea9"); err != nil {
+		log.Error(err.Error())
+		//return
+	}
+
 	pRet, err := thinkutils.QQwryUtils.IPLocation("182.139.183.98")
 	if err != nil {
 		log.Error(err.Error())

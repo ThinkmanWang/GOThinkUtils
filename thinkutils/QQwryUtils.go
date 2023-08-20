@@ -84,6 +84,14 @@ func (this qqwryutils) RefreshData(pUserData any) error {
 	szFile, err := this.downloadQqwry(szAppCode)
 	if err != nil {
 		log.Error("**QQWRY** %s", err.Error())
+
+		pData := GetMemCacheInstance().Get("QQWRY_DAT")
+		if nil == pData {
+			return err
+		}
+
+		GetMemCacheInstance().Set("QQWRY_DAT", 86400, pData, szAppCode, this.RefreshData)
+
 		return err
 	}
 
