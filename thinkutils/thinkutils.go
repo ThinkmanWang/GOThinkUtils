@@ -26,7 +26,6 @@ var (
 	HttpUtils    httputils
 	SetUtils     setutils
 	StructUtils  structutis
-	QQwryUtils   qqwryutils
 )
 
 func ListRemoveAt[T int8 | int16 | int32 | int64 | int | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64 | string | any](lstData []T, nIndex int) []T {
