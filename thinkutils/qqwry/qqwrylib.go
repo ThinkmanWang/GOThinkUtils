@@ -106,6 +106,11 @@ func (this *QQwry) Find(ip string) *Rq {
 	szProvinceCity = strings.ReplaceAll(szProvinceCity, "自治区", "自治区 ")
 	szProvinceCity = strings.ReplaceAll(szProvinceCity, "市", "市 ")
 	szProvinceCity = strings.ReplaceAll(szProvinceCity, "县", "县 ")
+	szProvinceCity = strings.ReplaceAll(szProvinceCity, "西藏", "西藏 ")
+	szProvinceCity = strings.ReplaceAll(szProvinceCity, "新疆", "新疆 ")
+	szProvinceCity = strings.ReplaceAll(szProvinceCity, "宁夏", "宁夏 ")
+	szProvinceCity = strings.ReplaceAll(szProvinceCity, "广西", "广西 ")
+	szProvinceCity = strings.ReplaceAll(szProvinceCity, "内蒙古", "内蒙古 ")
 
 	lstArea := strings.Split(szProvinceCity, " ")
 
