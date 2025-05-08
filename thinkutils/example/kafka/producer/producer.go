@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/ThinkmanWang/GOThinkUtils/thinkutils"
 	"github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
-	"fmt"
 	"time"
 )
 
@@ -13,17 +12,28 @@ var (
 
 func main() {
 
-	nIndex := 0
-	for i := 0; i < 10; i++ {
-		nIndex++
-		szMsg := fmt.Sprintf("[%d] %s", nIndex, thinkutils.DateTime.CurDatetime())
-		thinkutils.KafkaUtils.SendMsg("172.16.0.2:9092",
-			"think-topic",
-			[]byte(szMsg))
+	for i := 0; i < 10000; i++ {
+		go func() {
+			//szMsg := fmt.Sprintf("[%d] %s", nIndex, thinkutils.DateTime.CurDatetime())
+			dictDetail := map[string]any{
+				"uid":        "00001",
+				"logtype":    "loadAd",
+				"adPosition": "aaaaabbbsss",
+				"timestamp":  thinkutils.DateTime.TimestampMs(),
+			}
+			dictMsg := map[string]any{
+				"json": dictDetail,
+			}
 
-		log.Info("Send %s", szMsg)
-		time.Sleep(time.Duration(500) * time.Millisecond)
+			thinkutils.KafkaUtils.SendMsg("172.16.0.106:9092,172.16.8.106:9092,172.16.12.54:9092",
+				"topic-game_loghub_common",
+				[]byte(thinkutils.JSONUtils.ToJson(dictMsg)))
+
+			log.Info("Send %s", thinkutils.JSONUtils.ToJson(dictMsg))
+			time.Sleep(time.Duration(500) * time.Millisecond)
+		}()
+
 	}
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(60 * time.Second)
 }

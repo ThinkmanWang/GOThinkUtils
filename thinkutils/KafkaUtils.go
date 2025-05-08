@@ -48,7 +48,7 @@ func (this kafkautils) StartConsumer(szUrl string, szTopic string, szGroupId str
 	}()
 }
 
-func (this kafkautils) makeWriter(szUrl string, szTopic string) *kafka.Writer {
+func (this kafkautils) makeWriter(szUrl, szTopic string) *kafka.Writer {
 	defer g_lockKafka.Unlock()
 	g_lockKafka.Lock()
 
@@ -57,10 +57,12 @@ func (this kafkautils) makeWriter(szUrl string, szTopic string) *kafka.Writer {
 	pWriter := g_mapKafkaWriter[szConn]
 	if nil == pWriter {
 		//brokers := strings.Split(kafkaURL, ",")
+		lstUrl := strings.Split(szUrl, ",")
 		pWriter = &kafka.Writer{
-			Addr:     kafka.TCP(szUrl),
+			Addr:     kafka.TCP(lstUrl...),
 			Topic:    szTopic,
 			Balancer: &kafka.LeastBytes{},
+			Async:    true,
 		}
 
 		g_mapKafkaWriter[szConn] = pWriter
@@ -70,14 +72,40 @@ func (this kafkautils) makeWriter(szUrl string, szTopic string) *kafka.Writer {
 	return pWriter
 }
 
+//func (this kafkautils) makeSingleWriter(szUrl, szTopic string) *kafka.Writer {
+//
+//	//brokers := strings.Split(kafkaURL, ",")
+//	lstUrl := strings.Split(szUrl, ",")
+//	pWriter := &kafka.Writer{
+//		Addr:     kafka.TCP(lstUrl...),
+//		Topic:    szTopic,
+//		Balancer: &kafka.LeastBytes{},
+//		Async:    true,
+//	}
+//
+//	return pWriter
+//}
+
+func (this kafkautils) initUtils() map[string]*kafka.Writer {
+	defer g_lockKafka.Unlock()
+	g_lockKafka.Lock()
+
+	if nil == g_mapKafkaWriter {
+		g_mapKafkaWriter = make(map[string]*kafka.Writer)
+	}
+
+	return g_mapKafkaWriter
+}
+
 func (this kafkautils) SendMsg(szUrl string, szTopic string, data []byte) {
-	go func() {
+	go func(szUrl string, szTopic string, data []byte) {
 		if nil == g_mapKafkaWriter {
-			g_mapKafkaWriter = make(map[string]*kafka.Writer)
+			g_mapKafkaWriter = this.initUtils()
 		}
 
 		szConn := fmt.Sprintf("%s/%s", szUrl, szTopic)
 		pWriter := g_mapKafkaWriter[szConn]
+
 		if nil == pWriter {
 			pWriter = this.makeWriter(szUrl, szTopic)
 		}
@@ -92,6 +120,23 @@ func (this kafkautils) SendMsg(szUrl string, szTopic string, data []byte) {
 		if err != nil {
 			log.Error(err.Error())
 		}
-	}()
-
+	}(szUrl, szTopic, data)
 }
+
+//func (this kafkautils) SendMsgPlus(szUrl string, szTopic string, data []byte) {
+//	go func(szUrl string, szTopic string, data []byte) {
+//		pWriter := this.makeSingleWriter(szUrl, szTopic)
+//		defer pWriter.Close()
+//
+//		msg := kafka.Message{
+//			//Key:   []byte("1"),
+//			Value: data,
+//		}
+//
+//		//log.Info("%p %p", g_mapKafkaWriter, pWriter)
+//		err := pWriter.WriteMessages(context.Background(), msg)
+//		if err != nil {
+//			log.Error(err.Error())
+//		}
+//	}(szUrl, szTopic, data)
+//}
