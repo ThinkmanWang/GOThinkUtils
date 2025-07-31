@@ -1,16 +1,16 @@
 package main
 
 import (
-	"github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
 	"fmt"
-	"github.com/asaskevich/EventBus"
+	"github.com/ThinkmanWang/GOThinkUtils/thinkutils"
+	"github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
 	"sync"
 	"time"
 )
 
 var (
 	log *logger.LocalLogger = logger.DefaultLogger()
-	bus EventBus.Bus        = EventBus.New()
+	//bus EventBus.Bus        = EventBus.New()
 )
 
 func onMsg(szMsg string) {
@@ -36,19 +36,19 @@ func onMultiParams(szName string, szDesc string) {
 }
 
 func publish() {
-	bus.Publish("main:message", "FXXK")
+	thinkutils.ThinkEventBus.Publish("main:message", "FXXK")
 
 	pData := &MyStruct{Name: "123", Desc: "456"}
 	log.Info("%p", pData)
-	bus.Publish("main:otherMessage", pData)
-	bus.Publish("main:multiParams", "123", "456")
-	bus.Publish("main:123456", "12356")
+	thinkutils.ThinkEventBus.Publish("main:otherMessage", pData)
+	thinkutils.ThinkEventBus.Publish("main:multiParams", "123", "456")
+	thinkutils.ThinkEventBus.Publish("main:123456", "12356")
 }
 
 func main() {
-	bus.SubscribeAsync("main:message", onMsg, false)
-	bus.SubscribeAsync("main:otherMessage", onStructMsg, false)
-	bus.SubscribeAsync("main:multiParams", onMultiParams, false)
+	thinkutils.ThinkEventBus.SubscribeAsync("main:message", onMsg, false)
+	thinkutils.ThinkEventBus.SubscribeAsync("main:otherMessage", onStructMsg, false)
+	thinkutils.ThinkEventBus.SubscribeAsync("main:multiParams", onMultiParams, false)
 
 	go func() {
 		publish()
