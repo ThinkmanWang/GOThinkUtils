@@ -14,6 +14,7 @@ var (
 	StringUtils   stringutils
 	RandUtils     randutils
 	MD5Utils      md5utils
+	AESUtils      aesutils
 	IPUtils       iputils
 	UUIDUtils     uuidutils
 	ThinkMysql    thinkmysql
