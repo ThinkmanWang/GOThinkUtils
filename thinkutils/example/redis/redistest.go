@@ -1,10 +1,11 @@
 package main
 
 import (
+	"context"
 	"github.com/ThinkmanWang/GOThinkUtils/thinkutils"
 	"github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
-	"context"
 	"sync"
+	"time"
 )
 
 var (
@@ -40,7 +41,9 @@ func lockTest(wg *sync.WaitGroup) {
 	} else {
 		log.Info("LOCK")
 	}
-	//thinkutils.ThinkRedis.ReleaseLock(rdb, "mylock", szVal)
+
+	time.Sleep(30 * time.Millisecond)
+	thinkutils.ThinkRedis.ReleaseLock(rdb, "mylock", szVal)
 }
 
 func main() {
@@ -50,6 +53,8 @@ func main() {
 	//	go redisTest(&wg)
 	//}
 	//
+	wg.Add(1)
+	go lockTest(&wg)
 	wg.Add(1)
 	go lockTest(&wg)
 

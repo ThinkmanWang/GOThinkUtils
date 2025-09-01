@@ -101,7 +101,7 @@ func (this thinkredis) Lock(rDB *redis.Client, szName string, nAcquireTimeout in
 			break
 		}
 
-		time.Sleep(1 * time.Second)
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	return ""
