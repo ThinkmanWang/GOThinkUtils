@@ -3,10 +3,11 @@ package thinkutils
 import (
 	"context"
 	"fmt"
-	"github.com/segmentio/kafka-go"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/segmentio/kafka-go"
 )
 
 type kafkautils struct {
@@ -98,7 +99,11 @@ func (this kafkautils) initUtils() map[string]*kafka.Writer {
 }
 
 func (this kafkautils) SendMsg(szUrl string, szTopic string, data []byte) {
-	go func(szUrl string, szTopic string, data []byte) {
+	this.SendMsgPlus(szUrl, szTopic, "", data)
+}
+
+func (this kafkautils) SendMsgPlus(szUrl string, szTopic string, szKey string, data []byte) {
+	go func(szUrl string, szTopic string, szKey string, data []byte) {
 		if nil == g_mapKafkaWriter {
 			g_mapKafkaWriter = this.initUtils()
 		}
@@ -111,8 +116,11 @@ func (this kafkautils) SendMsg(szUrl string, szTopic string, data []byte) {
 		}
 
 		msg := kafka.Message{
-			//Key:   []byte("1"),
+			//Key:   key,
 			Value: data,
+		}
+		if false == StringUtils.IsEmpty(szKey) {
+			msg.Key = []byte(szKey)
 		}
 
 		//log.Info("%p %p", g_mapKafkaWriter, pWriter)
@@ -120,7 +128,7 @@ func (this kafkautils) SendMsg(szUrl string, szTopic string, data []byte) {
 		if err != nil {
 			log.Error(err.Error())
 		}
-	}(szUrl, szTopic, data)
+	}(szUrl, szTopic, szKey, data)
 }
 
 //func (this kafkautils) SendMsgPlus(szUrl string, szTopic string, data []byte) {
