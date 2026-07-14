@@ -41,6 +41,7 @@ func (this *ThinkMemCache) Start() {
 	if this.m_bStarted {
 		return
 	}
+	this.m_bStarted = true
 
 	go func() {
 		for {
@@ -132,15 +133,15 @@ func (this *ThinkMemCache) Refresh() {
 
 		if v.m_nExpireAt != 0 && DateTime.Timestamp() >= v.m_nExpireAt && v.m_pFunc != nil {
 			wg.Add(1)
-			go func(pFunc FuncRefreshCache) {
+			go func(pFunc FuncRefreshCache, pUserData any) {
 				defer wg.Done()
 
 				nStart := DateTime.TimestampMs()
-				if err := pFunc(v.m_pUserData); err != nil {
+				if err := pFunc(pUserData); err != nil {
 					logger.Warn(err.Error())
 				}
 				logger.Info(">>>>Call %s for cache, cost %d<<<<", gort.FuncForPC(reflect.ValueOf(pFunc).Pointer()).Name(), DateTime.TimestampMs()-nStart)
-			}(v.m_pFunc)
+			}(v.m_pFunc, v.m_pUserData)
 
 		}
 	}
