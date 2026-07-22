@@ -60,6 +60,7 @@ func (this *ThinkBigCache) loadFromDisk(c *bigcache.BigCache, path string) error
 
 	data, err := os.ReadFile(path)
 	if err != nil {
+		log.Error(err.Error())
 		return err
 	}
 
@@ -69,11 +70,13 @@ func (this *ThinkBigCache) loadFromDisk(c *bigcache.BigCache, path string) error
 func (this *ThinkBigCache) saveToDisk(c *bigcache.BigCache, path string) error {
 	var buf bytes.Buffer
 	if err := gob.NewEncoder(&buf).Encode(c); err != nil {
+		log.Error(err.Error())
 		return err
 	}
 
 	tmp := path + ".tmp"
 	if err := os.WriteFile(tmp, buf.Bytes(), 0644); err != nil {
+		log.Error(err.Error())
 		return err
 	}
 	return os.Rename(tmp, path)
@@ -132,34 +135,36 @@ func (this *ThinkBigCache) initCron() error {
 		this.emitUpdate(UPDATE_1_MIN)
 	})
 
-	_, _ = this.m_pCronJobs.Cron("0 */5 * * * *").Do(func() {
+	_, _ = this.m_pCronJobs.Cron("*/5 * * * *").Do(func() {
 		this.saveToDisk(this.m_pBigCache, "ThinkBigCache.data")
 		this.emitUpdate(UPDATE_5_MIN)
 	})
 
-	_, _ = this.m_pCronJobs.Cron("0 */10 * * * *").Do(func() {
+	_, _ = this.m_pCronJobs.Cron("*/10 * * * *").Do(func() {
 		this.emitUpdate(UPDATE_10_MIN)
 	})
 
-	_, _ = this.m_pCronJobs.Cron("0 */30 * * * *").Do(func() {
+	_, _ = this.m_pCronJobs.Cron("*/30 * * * *").Do(func() {
 		this.emitUpdate(UPDATE_30_MIN)
 	})
 
-	_, _ = this.m_pCronJobs.Cron("0 0 * * * *").Do(func() {
+	_, _ = this.m_pCronJobs.Cron("0 * * * *").Do(func() {
 		this.emitUpdate(UPDATE_1_HOUR)
 	})
 
-	_, _ = this.m_pCronJobs.Cron("0 0 0,6,12,18 * * *").Do(func() {
+	_, _ = this.m_pCronJobs.Cron("0 0,6,12,18 * * *").Do(func() {
 		this.emitUpdate(UPDATE_6_HOUR)
 	})
 
-	_, _ = this.m_pCronJobs.Cron("0 0 0,12 * * *").Do(func() {
+	_, _ = this.m_pCronJobs.Cron("0 0,12 * * *").Do(func() {
 		this.emitUpdate(UPDATE_12_HOUR)
 	})
 
-	_, _ = this.m_pCronJobs.Cron("0 0 0 * * *").Do(func() {
-		this.emitUpdate(UPDATE_12_HOUR)
+	_, _ = this.m_pCronJobs.Cron("0 0 * * *").Do(func() {
+		this.emitUpdate(UPDATE_1_DAY)
 	})
+
+	this.m_pCronJobs.StartAsync()
 
 	return nil
 }
@@ -195,6 +200,7 @@ func (this *ThinkBigCache) Start() error {
 	}
 
 	this.m_bStarted = true
+	log.Info("ThinkBigCache started successfully")
 
 err_ret:
 	return err
