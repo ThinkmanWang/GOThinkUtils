@@ -15,6 +15,12 @@ func main() {
 		return
 	}
 
+	if data, err := thinkutils.ThinkBigCacheInstance().Get("test001"); err != nil {
+		log.Error("Failed to get test001 : %s", err.Error())
+	} else {
+		log.Info("Test001 : %s", string(data))
+	}
+
 	_ = thinkutils.ThinkBigCacheInstance().Set("test001", []byte("Hello World"))
 	thinkutils.ThinkBigCacheInstance().AddUpdateListener(thinkutils.UPDATE_1_MIN, func() {
 		log.Info("Update every 1 min")

@@ -64,12 +64,37 @@ func (this *ThinkBigCache) loadFromDisk(c *bigcache.BigCache, path string) error
 		return err
 	}
 
-	return gob.NewDecoder(bytes.NewBuffer(data)).Decode(c)
+	entries := make(map[string][]byte)
+	if err := gob.NewDecoder(bytes.NewBuffer(data)).Decode(&entries); err != nil {
+		log.Error(err.Error())
+		return err
+	}
+
+	for key, value := range entries {
+		if err := c.Set(key, value); err != nil {
+			log.Error(err.Error())
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (this *ThinkBigCache) saveToDisk(c *bigcache.BigCache, path string) error {
+	entries := make(map[string][]byte)
+
+	iter := c.Iterator()
+	for iter.SetNext() {
+		info, err := iter.Value()
+		if err != nil {
+			log.Error(err.Error())
+			return err
+		}
+		entries[info.Key()] = info.Value()
+	}
+
 	var buf bytes.Buffer
-	if err := gob.NewEncoder(&buf).Encode(c); err != nil {
+	if err := gob.NewEncoder(&buf).Encode(entries); err != nil {
 		log.Error(err.Error())
 		return err
 	}
@@ -193,6 +218,8 @@ func (this *ThinkBigCache) Start() error {
 	if err != nil {
 		goto err_ret
 	}
+	_ = this.Set("Hello", []byte("Hello World"))
+	_ = this.saveToDisk(this.m_pBigCache, "ThinkBigCache.data")
 
 	err = this.initCron()
 	if err != nil {
