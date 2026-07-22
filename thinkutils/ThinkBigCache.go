@@ -30,6 +30,7 @@ const (
 
 type ThinkBigCache struct {
 	m_lock      sync.RWMutex
+	m_lockFile  sync.Mutex
 	m_bStarted  bool
 	m_pCronJobs *gocron.Scheduler
 	m_pBigCache *bigcache.BigCache
@@ -55,6 +56,9 @@ func ThinkBigCacheInstance() *ThinkBigCache {
 }
 
 func (this *ThinkBigCache) loadFromDisk(c *bigcache.BigCache, path string) error {
+	this.m_lockFile.Lock()
+	defer this.m_lockFile.Unlock()
+
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil
 	}
@@ -82,6 +86,9 @@ func (this *ThinkBigCache) loadFromDisk(c *bigcache.BigCache, path string) error
 }
 
 func (this *ThinkBigCache) saveToDisk(c *bigcache.BigCache, path string) error {
+	this.m_lockFile.Lock()
+	defer this.m_lockFile.Unlock()
+
 	entries := make(map[string][]byte)
 
 	iter := c.Iterator()
