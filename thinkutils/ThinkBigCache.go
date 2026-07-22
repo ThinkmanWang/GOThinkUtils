@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
+	"errors"
 	"os"
 	"sync"
 	"time"
@@ -28,7 +29,7 @@ const (
 )
 
 type ThinkBigCache struct {
-	m_lock      sync.Mutex
+	m_lock      sync.RWMutex
 	m_bStarted  bool
 	m_pCronJobs *gocron.Scheduler
 	m_pBigCache *bigcache.BigCache
@@ -108,6 +109,9 @@ func (this *ThinkBigCache) saveToDisk(c *bigcache.BigCache, path string) error {
 }
 
 func (this *ThinkBigCache) emitUpdate(nType ThinkBigCacheUpdateType) {
+	this.m_lock.RLock()
+	defer this.m_lock.RUnlock()
+
 	switch nType {
 	case UPDATE_1_MIN:
 		for _, pFunc := range this.m_lst1MinListener {
@@ -213,7 +217,11 @@ func (this *ThinkBigCache) Start() error {
 		Verbose:          false,
 	}
 
-	this.m_pBigCache, _ = bigcache.New(context.Background(), cfg)
+	this.m_pBigCache, err = bigcache.New(context.Background(), cfg)
+	if err != nil {
+		goto err_ret
+	}
+
 	err = this.loadFromDisk(this.m_pBigCache, "ThinkBigCache.data")
 	if err != nil {
 		goto err_ret
@@ -234,6 +242,8 @@ err_ret:
 }
 
 func (this *ThinkBigCache) AddUpdateListener(nType ThinkBigCacheUpdateType, pFunc OnThinkBigCacheUpdate) {
+	this.m_lock.Lock()
+	defer this.m_lock.Unlock()
 	switch nType {
 	case UPDATE_1_MIN:
 		this.m_lst1MinListener = append(this.m_lst1MinListener, pFunc)
@@ -255,10 +265,18 @@ func (this *ThinkBigCache) AddUpdateListener(nType ThinkBigCacheUpdateType, pFun
 }
 
 func (this *ThinkBigCache) Set(szKey string, data []byte) error {
+	if nil == this.m_pBigCache {
+		return errors.New("ThinkBigCache is nil")
+	}
+
 	return this.m_pBigCache.Set(szKey, data)
 }
 
 func (this *ThinkBigCache) Get(szKey string) ([]byte, error) {
+	if nil == this.m_pBigCache {
+		return nil, errors.New("ThinkBigCache is nil")
+	}
+
 	if data, err := this.m_pBigCache.Get(szKey); err != nil {
 		return nil, err
 	} else {
