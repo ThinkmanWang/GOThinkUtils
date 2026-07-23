@@ -6,7 +6,9 @@ import (
 	"encoding/gob"
 	"errors"
 	"os"
+	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/allegro/bigcache/v3"
@@ -29,11 +31,16 @@ const (
 )
 
 type ThinkBigCache struct {
-	m_lock      sync.RWMutex
-	m_lockFile  sync.Mutex
+	m_lock     sync.RWMutex
+	m_lockFile sync.Mutex
+	// m_swapMu 串行化写端(Set)与 refreshMemory 重建：
+	// 重建期间禁止并发 Set，避免写入落到即将被丢弃的旧 cache 上导致丢数据。
+	// 读端(Get)不参与此锁，通过 m_pBigCache 原子读取当前实例，全程无锁。
+	m_swapMu    sync.Mutex
 	m_bStarted  bool
 	m_pCronJobs *gocron.Scheduler
-	m_pBigCache *bigcache.BigCache
+	// m_pBigCache 采用原子指针：读端一次原子读拿到当前实例，写端(refreshMemory)原子替换整个实例。
+	m_pBigCache atomic.Pointer[bigcache.BigCache]
 
 	m_lst1MinListener   []OnThinkBigCacheUpdate
 	m_lst5MinListener   []OnThinkBigCacheUpdate
@@ -172,7 +179,7 @@ func (this *ThinkBigCache) initCron() error {
 	})
 
 	_, _ = this.m_pCronJobs.Cron("*/5 * * * *").Do(func() {
-		this.saveToDisk(this.m_pBigCache, "ThinkBigCache.data")
+		this.saveToDisk(this.m_pBigCache.Load(), "ThinkBigCache.data")
 		this.emitUpdate(UPDATE_5_MIN)
 	})
 
@@ -187,6 +194,7 @@ func (this *ThinkBigCache) initCron() error {
 	_, _ = this.m_pCronJobs.Cron("0 * * * *").Do(func() {
 		this.emitUpdate(UPDATE_1_HOUR)
 		_ = this.refreshMemory()
+		runtime.GC()
 	})
 
 	_, _ = this.m_pCronJobs.Cron("0 0,6,12,18 * * *").Do(func() {
@@ -206,7 +214,58 @@ func (this *ThinkBigCache) initCron() error {
 	return nil
 }
 
+// refreshMemory 重建整个 BigCache 以回收覆盖写产生的死空间(dead space)。
+// BigCache 对已存在 key 的 Set 不会原地更新，而是追加新数据并将旧条置无效；
+// 在 CleanWindow=0 + HardMaxCacheSize=0 下旧条字节永不回收，内存会随刷新次数单调上涨。
+// 此处新建一个 cache，将旧 cache 中的活数据全量复制过去，再原子替换实例，从而丢弃死空间。
 func (this *ThinkBigCache) refreshMemory() error {
+	// 与 Set 互斥：重建期间不允许并发写入，保证旧 cache 在复制过程中不再变化，避免丢写。
+	this.m_swapMu.Lock()
+	defer this.m_swapMu.Unlock()
+
+	old := this.m_pBigCache.Load()
+	if nil == old {
+		return nil
+	}
+
+	nStart := DateTime.TimestampMs()
+	log.Info("ThinkBigCache refreshMemory START")
+
+	cfg := bigcache.Config{
+		Shards:           1024,
+		LifeWindow:       100 * 365 * 24 * time.Hour, // 逻辑永久有效
+		CleanWindow:      0,                          // 关闭后台清理，库绝不主动删除数据
+		MaxEntrySize:     4 * 1024 * 1024,
+		HardMaxCacheSize: 0, // 无内存上限
+		Verbose:          false,
+	}
+
+	fresh, err := bigcache.New(context.Background(), cfg)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+
+	nCopied := 0
+	iter := old.Iterator()
+	for iter.SetNext() {
+		info, err := iter.Value()
+		if err != nil {
+			// 单条取值失败跳过，不中断整次重建。
+			continue
+		}
+		if err := fresh.Set(info.Key(), info.Value()); err != nil {
+			log.Error(err.Error())
+			continue
+		}
+		nCopied++
+	}
+
+	// 原子发布新实例；旧实例丢引用后由 GC 回收。
+	// CleanWindow=0 无后台 goroutine，无需显式 Close，且不 Close 可避免影响刚 Load 到旧实例、随后才 Get 的请求。
+	this.m_pBigCache.Store(fresh)
+	log.Info("ThinkBigCache refreshMemory FINISH copied %d entries, cost %d ms", nCopied, DateTime.TimestampMs()-nStart)
+
 	return nil
 }
 
@@ -219,6 +278,7 @@ func (this *ThinkBigCache) Start() error {
 	}
 
 	var err error = nil
+	var pBigCache *bigcache.BigCache = nil
 
 	cfg := bigcache.Config{
 		Shards:           1024,
@@ -229,17 +289,18 @@ func (this *ThinkBigCache) Start() error {
 		Verbose:          false,
 	}
 
-	this.m_pBigCache, err = bigcache.New(context.Background(), cfg)
+	pBigCache, err = bigcache.New(context.Background(), cfg)
 	if err != nil {
 		goto err_ret
 	}
+	this.m_pBigCache.Store(pBigCache)
 
-	err = this.loadFromDisk(this.m_pBigCache, "ThinkBigCache.data")
+	err = this.loadFromDisk(pBigCache, "ThinkBigCache.data")
 	if err != nil {
 		goto err_ret
 	}
 	_ = this.Set("Hello", []byte("Hello World"))
-	_ = this.saveToDisk(this.m_pBigCache, "ThinkBigCache.data")
+	_ = this.saveToDisk(pBigCache, "ThinkBigCache.data")
 
 	err = this.initCron()
 	if err != nil {
@@ -277,19 +338,27 @@ func (this *ThinkBigCache) AddUpdateListener(nType ThinkBigCacheUpdateType, pFun
 }
 
 func (this *ThinkBigCache) Set(szKey string, data []byte) error {
-	if nil == this.m_pBigCache {
+	// 与 refreshMemory 互斥：避免写入落到重建期间即将被丢弃的旧 cache 上导致丢数据。
+	// Set 仅在配置刷新时调用，不在请求热路径，加锁开销可忽略。
+	this.m_swapMu.Lock()
+	defer this.m_swapMu.Unlock()
+
+	pBigCache := this.m_pBigCache.Load()
+	if nil == pBigCache {
 		return errors.New("ThinkBigCache is nil")
 	}
 
-	return this.m_pBigCache.Set(szKey, data)
+	return pBigCache.Set(szKey, data)
 }
 
 func (this *ThinkBigCache) Get(szKey string) ([]byte, error) {
-	if nil == this.m_pBigCache {
+	// 读端热路径：一次原子读拿到当前实例，全程无锁。
+	pBigCache := this.m_pBigCache.Load()
+	if nil == pBigCache {
 		return nil, errors.New("ThinkBigCache is nil")
 	}
 
-	if data, err := this.m_pBigCache.Get(szKey); err != nil {
+	if data, err := pBigCache.Get(szKey); err != nil {
 		return nil, err
 	} else {
 		return data, nil
