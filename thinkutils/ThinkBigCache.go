@@ -186,6 +186,7 @@ func (this *ThinkBigCache) initCron() error {
 
 	_, _ = this.m_pCronJobs.Cron("0 * * * *").Do(func() {
 		this.emitUpdate(UPDATE_1_HOUR)
+		_ = this.refreshMemory()
 	})
 
 	_, _ = this.m_pCronJobs.Cron("0 0,6,12,18 * * *").Do(func() {
@@ -202,6 +203,10 @@ func (this *ThinkBigCache) initCron() error {
 
 	this.m_pCronJobs.StartAsync()
 
+	return nil
+}
+
+func (this *ThinkBigCache) refreshMemory() error {
 	return nil
 }
 
