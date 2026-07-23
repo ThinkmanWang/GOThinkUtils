@@ -36,8 +36,11 @@ type ThinkBigCache struct {
 	// m_swapMu 串行化写端(Set)与 refreshMemory 重建：
 	// 重建期间禁止并发 Set，避免写入落到即将被丢弃的旧 cache 上导致丢数据。
 	// 读端(Get)不参与此锁，通过 m_pBigCache 原子读取当前实例，全程无锁。
-	m_swapMu    sync.Mutex
-	m_bStarted  bool
+	m_swapMu sync.Mutex
+
+	m_bStarted bool
+	m_config   bigcache.Config
+
 	m_pCronJobs *gocron.Scheduler
 	// m_pBigCache 采用原子指针：读端一次原子读拿到当前实例，写端(refreshMemory)原子替换整个实例。
 	m_pBigCache atomic.Pointer[bigcache.BigCache]
@@ -231,16 +234,7 @@ func (this *ThinkBigCache) refreshMemory() error {
 	nStart := DateTime.TimestampMs()
 	log.Info("ThinkBigCache refreshMemory START")
 
-	cfg := bigcache.Config{
-		Shards:           1024,
-		LifeWindow:       100 * 365 * 24 * time.Hour, // 逻辑永久有效
-		CleanWindow:      0,                          // 关闭后台清理，库绝不主动删除数据
-		MaxEntrySize:     4 * 1024 * 1024,
-		HardMaxCacheSize: 0, // 无内存上限
-		Verbose:          false,
-	}
-
-	fresh, err := bigcache.New(context.Background(), cfg)
+	fresh, err := bigcache.New(context.Background(), this.m_config)
 	if err != nil {
 		log.Error(err.Error())
 		return err
@@ -264,12 +258,29 @@ func (this *ThinkBigCache) refreshMemory() error {
 	// 原子发布新实例；旧实例丢引用后由 GC 回收。
 	// CleanWindow=0 无后台 goroutine，无需显式 Close，且不 Close 可避免影响刚 Load 到旧实例、随后才 Get 的请求。
 	this.m_pBigCache.Store(fresh)
+	go func(o *bigcache.BigCache) {
+		time.Sleep(30 * time.Second) // 给在途请求留出用完旧指针的时间
+		_ = o.Close()
+	}(old)
 	log.Info("ThinkBigCache refreshMemory FINISH copied %d entries, cost %d ms", nCopied, DateTime.TimestampMs()-nStart)
 
 	return nil
 }
 
 func (this *ThinkBigCache) Start() error {
+	cfg := bigcache.Config{
+		Shards:           1024,
+		LifeWindow:       100 * 365 * 24 * time.Hour, // 逻辑永久有效
+		CleanWindow:      0,                          // 关闭后台清理，库绝不主动删除数据
+		MaxEntrySize:     64 * 1024,
+		HardMaxCacheSize: 0, // 无内存上限
+		Verbose:          false,
+	}
+
+	return this.StartEx(cfg)
+}
+
+func (this *ThinkBigCache) StartEx(cfg bigcache.Config) error {
 	this.m_lock.Lock()
 	defer this.m_lock.Unlock()
 
@@ -280,16 +291,9 @@ func (this *ThinkBigCache) Start() error {
 	var err error = nil
 	var pBigCache *bigcache.BigCache = nil
 
-	cfg := bigcache.Config{
-		Shards:           1024,
-		LifeWindow:       100 * 365 * 24 * time.Hour, // 逻辑永久有效
-		CleanWindow:      0,                          // 关闭后台清理，库绝不主动删除数据
-		MaxEntrySize:     4 * 1024 * 1024,
-		HardMaxCacheSize: 0, // 无内存上限
-		Verbose:          false,
-	}
+	this.m_config = cfg
 
-	pBigCache, err = bigcache.New(context.Background(), cfg)
+	pBigCache, err = bigcache.New(context.Background(), this.m_config)
 	if err != nil {
 		goto err_ret
 	}
