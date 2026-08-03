@@ -1,10 +1,11 @@
 package thinkutils
 
 import (
-	"bytes"
+	"bufio"
 	"context"
 	"encoding/gob"
 	"errors"
+	"io"
 	"os"
 	"runtime"
 	"sync"
@@ -14,6 +15,17 @@ import (
 	"github.com/allegro/bigcache/v3"
 	"github.com/go-co-op/gocron"
 )
+
+// thinkBigCacheDiskEntry 是磁盘持久化的单条记录。
+// 采用逐条流式 gob 编码，避免一次性把整个缓存拷进 map/buffer 造成的巨额瞬时分配与 GC 压力。
+type thinkBigCacheDiskEntry struct {
+	Key   string
+	Value []byte
+}
+
+// thinkBigCacheRebuildWriteThreshold 触发 refreshMemory 重建的写入量阈值。
+// 覆盖写才会产生死空间；自上次重建以来的 Set 次数达到该阈值才重建，否则跳过。
+const thinkBigCacheRebuildWriteThreshold int64 = 200
 
 type OnThinkBigCacheUpdate func()
 
@@ -40,6 +52,10 @@ type ThinkBigCache struct {
 
 	m_bStarted bool
 	m_config   bigcache.Config
+
+	// m_writeSinceRebuild 记录自上次 refreshMemory 重建以来的 Set 次数(受 m_swapMu 保护)。
+	// 用于判断死空间是否值得重建：无写入/写入很少的周期直接跳过，避免每小时无谓的 2x 内存重建与 GC 尖峰。
+	m_writeSinceRebuild int64
 
 	m_pCronJobs *gocron.Scheduler
 	// m_pBigCache 采用原子指针：读端一次原子读拿到当前实例，写端(refreshMemory)原子替换整个实例。
@@ -73,22 +89,28 @@ func (this *ThinkBigCache) loadFromDisk(c *bigcache.BigCache, path string) error
 		return nil
 	}
 
-	data, err := os.ReadFile(path)
+	f, err := os.Open(path)
 	if err != nil {
 		log.Error(err.Error())
 		return err
 	}
+	defer f.Close()
 
-	entries := make(map[string][]byte)
-	if err := gob.NewDecoder(bytes.NewBuffer(data)).Decode(&entries); err != nil {
-		log.Error(err.Error())
-		return err
-	}
-
-	for key, value := range entries {
-		if err := c.Set(key, value); err != nil {
+	// 逐条流式解码：任意时刻内存里只有一条记录，避免一次性载入整份数据(170MB+)。
+	dec := gob.NewDecoder(bufio.NewReaderSize(f, 1<<20))
+	for {
+		var entry thinkBigCacheDiskEntry
+		if err := dec.Decode(&entry); err != nil {
+			if err == io.EOF {
+				break
+			}
+			// 兼容旧格式或文件损坏：记录后按空缓存处理，绝不阻断服务启动(启动流程会视 loadFromDisk 出错而中止)。
+			log.Error("ThinkBigCache loadFromDisk decode failed, start with empty cache: %s", err.Error())
+			return nil
+		}
+		if err := c.Set(entry.Key, entry.Value); err != nil {
 			log.Error(err.Error())
-			return err
+			continue
 		}
 	}
 
@@ -99,29 +121,45 @@ func (this *ThinkBigCache) saveToDisk(c *bigcache.BigCache, path string) error {
 	this.m_lockFile.Lock()
 	defer this.m_lockFile.Unlock()
 
-	entries := make(map[string][]byte)
+	tmp := path + ".tmp"
+	f, err := os.Create(tmp)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+
+	// 逐条流式编码写盘：任意时刻内存里只有一条记录 + 1MB 缓冲，
+	// 消除原先"整表拷进 map + 整块编码进 buffer"造成的 170MB+ 瞬时分配，从根源上避免 GC 尖峰与 STW。
+	w := bufio.NewWriterSize(f, 1<<20)
+	enc := gob.NewEncoder(w)
 
 	iter := c.Iterator()
+	var entry thinkBigCacheDiskEntry
 	for iter.SetNext() {
 		info, err := iter.Value()
 		if err != nil {
+			// 单条取值失败跳过，不中断整次落盘。
+			continue
+		}
+		entry.Key = info.Key()
+		entry.Value = info.Value()
+		if err := enc.Encode(&entry); err != nil {
 			log.Error(err.Error())
+			_ = f.Close()
 			return err
 		}
-		entries[info.Key()] = info.Value()
 	}
 
-	var buf bytes.Buffer
-	if err := gob.NewEncoder(&buf).Encode(entries); err != nil {
+	if err := w.Flush(); err != nil {
+		log.Error(err.Error())
+		_ = f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
 		log.Error(err.Error())
 		return err
 	}
 
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, buf.Bytes(), 0644); err != nil {
-		log.Error(err.Error())
-		return err
-	}
 	return os.Rename(tmp, path)
 }
 
@@ -196,8 +234,8 @@ func (this *ThinkBigCache) initCron() error {
 
 	_, _ = this.m_pCronJobs.Cron("0 * * * *").Do(func() {
 		this.emitUpdate(UPDATE_1_HOUR)
+		// refreshMemory 内部会按写入量决定是否真正重建，并仅在重建后强制 GC，避免无谓 STW。
 		_ = this.refreshMemory()
-		runtime.GC()
 	})
 
 	_, _ = this.m_pCronJobs.Cron("0 0,6,12,18 * * *").Do(func() {
@@ -231,8 +269,15 @@ func (this *ThinkBigCache) refreshMemory() error {
 		return nil
 	}
 
+	// 死空间随覆盖写累积。方案A 后配置写入已是增量，绝大多数周期几乎无写入，
+	// 此时重建纯属浪费(2x 内存 + GC 尖峰)。仅当自上次重建以来的写入量达到阈值才重建。
+	if this.m_writeSinceRebuild < thinkBigCacheRebuildWriteThreshold {
+		log.Info("ThinkBigCache refreshMemory SKIP: %d writes since last rebuild (threshold %d)", this.m_writeSinceRebuild, thinkBigCacheRebuildWriteThreshold)
+		return nil
+	}
+
 	nStart := DateTime.TimestampMs()
-	log.Info("ThinkBigCache refreshMemory START")
+	log.Info("ThinkBigCache refreshMemory START, %d writes since last rebuild", this.m_writeSinceRebuild)
 
 	fresh, err := bigcache.New(context.Background(), this.m_config)
 	if err != nil {
@@ -258,11 +303,15 @@ func (this *ThinkBigCache) refreshMemory() error {
 	// 原子发布新实例；旧实例丢引用后由 GC 回收。
 	// CleanWindow=0 无后台 goroutine，无需显式 Close，且不 Close 可避免影响刚 Load 到旧实例、随后才 Get 的请求。
 	this.m_pBigCache.Store(fresh)
+	this.m_writeSinceRebuild = 0
 	go func(o *bigcache.BigCache) {
 		time.Sleep(30 * time.Second) // 给在途请求留出用完旧指针的时间
 		_ = o.Close()
 	}(old)
 	log.Info("ThinkBigCache refreshMemory FINISH copied %d entries, cost %d ms", nCopied, DateTime.TimestampMs()-nStart)
+
+	// 仅在真正重建后强制一次 GC，及时回收本次重建产生的瞬时垃圾与旧实例空间。
+	runtime.GC()
 
 	return nil
 }
@@ -352,6 +401,8 @@ func (this *ThinkBigCache) Set(szKey string, data []byte) error {
 		return errors.New("ThinkBigCache is nil")
 	}
 
+	// 计数写入量，供 refreshMemory 判断死空间是否值得重建(受 m_swapMu 保护)。
+	this.m_writeSinceRebuild++
 	return pBigCache.Set(szKey, data)
 }
 
