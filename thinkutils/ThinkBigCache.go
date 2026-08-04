@@ -320,7 +320,11 @@ func (this *ThinkBigCache) refreshMemory() error {
 			log.Error(err.Error())
 			continue
 		}
+
 		nCopied++
+		if 0 == nCopied%50 {
+			time.Sleep(time.Millisecond)
+		}
 	}
 
 	// 原子发布新实例；旧实例丢引用后由 GC 回收。
