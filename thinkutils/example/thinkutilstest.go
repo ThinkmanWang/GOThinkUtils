@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/ThinkmanWang/GOThinkUtils/thinkutils"
 	"github.com/ThinkmanWang/GOThinkUtils/thinkutils/logger"
-	"strconv"
 )
 
 var (
@@ -49,6 +50,7 @@ func datetimeTest() {
 
 func md5Test() {
 	log.Info(thinkutils.MD5Utils.MD5String("HHH"))
+	log.Info(thinkutils.MD5Utils.MD5String(""))
 
 	szMd5 := thinkutils.MD5Utils.MD5File("/Users/wangxiaofeng/Github-Thinkman/GolandProjects/github.com/ThinkmanWang/GOThinkUtils/github.com/ThinkmanWang/GOThinkUtils")
 	log.Info(szMd5)

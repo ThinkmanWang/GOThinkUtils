@@ -57,6 +57,11 @@ type ThinkBigCache struct {
 	// 用于判断死空间是否值得重建：无写入/写入很少的周期直接跳过，避免每小时无谓的 2x 内存重建与 GC 尖峰。
 	m_writeSinceRebuild int64
 
+	// m_bSavedToDisk 记录进程启动后是否已完成首次落盘。
+	// 启动后第一个 5 分钟周期先落盘一次(覆盖启动早期的写入)，之后固定每小时落盘，
+	// 避免每 5 分钟整表 170MB+ 的 I/O 与 Iterator 拷贝分配压力。
+	m_bSavedToDisk atomic.Bool
+
 	m_pCronJobs *gocron.Scheduler
 	// m_pBigCache 采用原子指针：读端一次原子读拿到当前实例，写端(refreshMemory)原子替换整个实例。
 	m_pBigCache atomic.Pointer[bigcache.BigCache]
@@ -135,6 +140,7 @@ func (this *ThinkBigCache) saveToDisk(c *bigcache.BigCache, path string) error {
 
 	iter := c.Iterator()
 	var entry thinkBigCacheDiskEntry
+	nSaved := 0
 	for iter.SetNext() {
 		info, err := iter.Value()
 		if err != nil {
@@ -147,6 +153,11 @@ func (this *ThinkBigCache) saveToDisk(c *bigcache.BigCache, path string) error {
 			log.Error(err.Error())
 			_ = f.Close()
 			return err
+		}
+
+		nSaved++
+		if 0 == nSaved%50 {
+			time.Sleep(time.Millisecond)
 		}
 	}
 
@@ -220,8 +231,12 @@ func (this *ThinkBigCache) initCron() error {
 	})
 
 	_, _ = this.m_pCronJobs.Cron("*/5 * * * *").Do(func() {
-		this.saveToDisk(this.m_pBigCache.Load(), "ThinkBigCache.data")
 		this.emitUpdate(UPDATE_5_MIN)
+		// 仅在进程启动后落盘一次，之后的周期落盘由整点任务负责。
+		if this.m_bSavedToDisk.CompareAndSwap(false, true) {
+			time.Sleep(60 * time.Second)
+			_ = this.saveToDisk(this.m_pBigCache.Load(), "ThinkBigCache.data")
+		}
 	})
 
 	_, _ = this.m_pCronJobs.Cron("*/10 * * * *").Do(func() {
@@ -234,12 +249,20 @@ func (this *ThinkBigCache) initCron() error {
 
 	_, _ = this.m_pCronJobs.Cron("0 * * * *").Do(func() {
 		this.emitUpdate(UPDATE_1_HOUR)
-		// refreshMemory 内部会按写入量决定是否真正重建，并仅在重建后强制 GC，避免无谓 STW。
-		_ = this.refreshMemory()
+		// 每小时周期落盘。
+		if this.m_bSavedToDisk.Load() {
+			time.Sleep(60 * time.Second)
+			_ = this.saveToDisk(this.m_pBigCache.Load(), "ThinkBigCache.data")
+		}
 	})
 
 	_, _ = this.m_pCronJobs.Cron("0 0,6,12,18 * * *").Do(func() {
 		this.emitUpdate(UPDATE_6_HOUR)
+
+		go func() {
+			time.Sleep(90 * time.Second)
+			_ = this.refreshMemory()
+		}()
 	})
 
 	_, _ = this.m_pCronJobs.Cron("0 0,12 * * *").Do(func() {
