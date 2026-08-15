@@ -249,11 +249,6 @@ func (this *ThinkBigCache) initCron() error {
 
 	_, _ = this.m_pCronJobs.Cron("0 * * * *").Do(func() {
 		this.emitUpdate(UPDATE_1_HOUR)
-		// 每小时周期落盘。
-		if this.m_bSavedToDisk.Load() {
-			time.Sleep(60 * time.Second)
-			_ = this.saveToDisk(this.m_pBigCache.Load(), "ThinkBigCache.data")
-		}
 	})
 
 	_, _ = this.m_pCronJobs.Cron("0 0,6,12,18 * * *").Do(func() {
@@ -271,6 +266,11 @@ func (this *ThinkBigCache) initCron() error {
 
 	_, _ = this.m_pCronJobs.Cron("0 0 * * *").Do(func() {
 		this.emitUpdate(UPDATE_1_DAY)
+		// 每天周期落盘。
+		if this.m_bSavedToDisk.Load() {
+			time.Sleep(60 * time.Second)
+			_ = this.saveToDisk(this.m_pBigCache.Load(), "ThinkBigCache.data")
+		}
 	})
 
 	this.m_pCronJobs.StartAsync()
