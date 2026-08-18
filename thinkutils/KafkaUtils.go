@@ -14,8 +14,10 @@ type kafkautils struct {
 }
 
 var (
-	g_lockKafka      sync.Mutex
-	g_mapKafkaWriter map[string]*kafka.Writer
+	// g_mapKafkaWriter: key "url/topic" -> *kafka.Writer。
+	// 用 sync.Map 保证并发安全，消除此前"未加锁读 + 加锁写"同一 map 导致的
+	// fatal error: concurrent map read and map write（冷启动 + 突发高并发时会崩整个进程）。
+	g_mapKafkaWriter sync.Map
 )
 
 type OnMsgCallback func(message kafka.Message)
@@ -49,28 +51,26 @@ func (this kafkautils) StartConsumer(szUrl string, szTopic string, szGroupId str
 	}()
 }
 
-func (this kafkautils) makeWriter(szUrl, szTopic string) *kafka.Writer {
-	defer g_lockKafka.Unlock()
-	g_lockKafka.Lock()
-
+func (this kafkautils) getWriter(szUrl, szTopic string) *kafka.Writer {
 	szConn := fmt.Sprintf("%s/%s", szUrl, szTopic)
 
-	pWriter := g_mapKafkaWriter[szConn]
-	if nil == pWriter {
-		//brokers := strings.Split(kafkaURL, ",")
-		lstUrl := strings.Split(szUrl, ",")
-		pWriter = &kafka.Writer{
-			Addr:     kafka.TCP(lstUrl...),
-			Topic:    szTopic,
-			Balancer: &kafka.LeastBytes{},
-			Async:    true,
-		}
-
-		g_mapKafkaWriter[szConn] = pWriter
-		//defer writer.Close()
+	// 快路径：已存在直接返回（sync.Map 并发读安全）。
+	if v, ok := g_mapKafkaWriter.Load(szConn); ok {
+		return v.(*kafka.Writer)
 	}
 
-	return pWriter
+	// 慢路径：新建 writer，用 LoadOrStore 保证同一 url/topic 只有一个 writer 生效。
+	// 并发下偶尔多建出来的会被丢弃：未写入过的 *kafka.Writer 不持有连接/goroutine，可安全 GC。
+	lstUrl := strings.Split(szUrl, ",")
+	pWriter := &kafka.Writer{
+		Addr:     kafka.TCP(lstUrl...),
+		Topic:    szTopic,
+		Balancer: &kafka.LeastBytes{},
+		Async:    true,
+	}
+
+	pActual, _ := g_mapKafkaWriter.LoadOrStore(szConn, pWriter)
+	return pActual.(*kafka.Writer)
 }
 
 //func (this kafkautils) makeSingleWriter(szUrl, szTopic string) *kafka.Writer {
@@ -87,48 +87,25 @@ func (this kafkautils) makeWriter(szUrl, szTopic string) *kafka.Writer {
 //	return pWriter
 //}
 
-func (this kafkautils) initUtils() map[string]*kafka.Writer {
-	defer g_lockKafka.Unlock()
-	g_lockKafka.Lock()
-
-	if nil == g_mapKafkaWriter {
-		g_mapKafkaWriter = make(map[string]*kafka.Writer)
-	}
-
-	return g_mapKafkaWriter
-}
-
 func (this kafkautils) SendMsg(szUrl string, szTopic string, data []byte) {
 	this.SendMsgPlus(szUrl, szTopic, "", data)
 }
 
 func (this kafkautils) SendMsgPlus(szUrl string, szTopic string, szKey string, data []byte) {
-	go func(szUrl string, szTopic string, szKey string, data []byte) {
-		if nil == g_mapKafkaWriter {
-			g_mapKafkaWriter = this.initUtils()
-		}
+	pWriter := this.getWriter(szUrl, szTopic)
 
-		szConn := fmt.Sprintf("%s/%s", szUrl, szTopic)
-		pWriter := g_mapKafkaWriter[szConn]
+	msg := kafka.Message{
+		Value: data,
+	}
+	if false == StringUtils.IsEmpty(szKey) {
+		msg.Key = []byte(szKey)
+	}
 
-		if nil == pWriter {
-			pWriter = this.makeWriter(szUrl, szTopic)
-		}
-
-		msg := kafka.Message{
-			//Key:   key,
-			Value: data,
-		}
-		if false == StringUtils.IsEmpty(szKey) {
-			msg.Key = []byte(szKey)
-		}
-
-		//log.Info("%p %p", g_mapKafkaWriter, pWriter)
-		err := pWriter.WriteMessages(context.Background(), msg)
-		if err != nil {
-			log.Error(err.Error())
-		}
-	}(szUrl, szTopic, szKey, data)
+	// writer 为 Async 模式，WriteMessages 仅把消息放入内存批次队列后立即返回、不阻塞，
+	// 因此无需再为每条消息单独 spawn goroutine（旧实现每消息一个 goroutine，突发时无上限暴涨）。
+	if err := pWriter.WriteMessages(context.Background(), msg); err != nil {
+		log.Error(err.Error())
+	}
 }
 
 //func (this kafkautils) SendMsgPlus(szUrl string, szTopic string, data []byte) {
