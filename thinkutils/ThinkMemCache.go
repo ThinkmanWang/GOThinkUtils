@@ -125,10 +125,15 @@ func (this *ThinkMemCache) Refresh() {
 			continue
 		}
 
+		szFuncName := "nil"
+		if nil != v.m_pFunc {
+			szFuncName = gort.FuncForPC(reflect.ValueOf(v.m_pFunc).Pointer()).Name()
+		}
+
 		if 0 == v.m_nExpireAt {
-			logger.Info("[%s] => %s never expire", szKey, gort.FuncForPC(reflect.ValueOf(v.m_pFunc).Pointer()).Name())
+			logger.Info("[%s] => %s never expire", szKey, szFuncName)
 		} else {
-			logger.Info("[%s] => %s expire in %d s", szKey, gort.FuncForPC(reflect.ValueOf(v.m_pFunc).Pointer()).Name(), v.m_nExpireAt-DateTime.Timestamp())
+			logger.Info("[%s] => %s expire in %d s", szKey, szFuncName, v.m_nExpireAt-DateTime.Timestamp())
 		}
 
 		if v.m_nExpireAt != 0 && DateTime.Timestamp() >= v.m_nExpireAt && v.m_pFunc != nil {
