@@ -58,6 +58,6 @@ func testLoad() {
 }
 
 func main() {
-	testSave()
-	//testLoad()
+	//testSave()
+	testLoad()
 }

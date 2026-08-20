@@ -55,11 +55,11 @@ type ThinkBigCachePlusPartition struct {
 }
 
 type ThinkBigCachePlus struct {
-	m_bStarted     atomic.Bool
-	m_bSavedToDisk atomic.Bool
-	m_lock         sync.RWMutex
-	m_lockFile     sync.Mutex
-	m_szFileName   string
+	m_bStarted atomic.Bool
+	//m_bSavedToDisk atomic.Bool
+	m_lock       sync.RWMutex
+	m_lockFile   sync.Mutex
+	m_szFileName string
 
 	m_mapPartition    sync.Map
 	m_nSaveToDiskType ThinkBigCachePlusUpdateType
@@ -284,10 +284,10 @@ func (this *ThinkBigCachePlus) initCron() error {
 	_, _ = this.m_pCronJobs.Cron("*/5 * * * *").Do(func() {
 		this.emitUpdate(THINK_BIGCACHE_PLUS_UPDATE_5_MIN)
 		// 仅在进程启动后落盘一次，之后的周期落盘由整点任务负责。
-		if this.m_bSavedToDisk.CompareAndSwap(false, true) {
-			time.Sleep(60 * time.Second)
-			_ = this.SaveToDisk()
-		}
+		//if this.m_bSavedToDisk.CompareAndSwap(false, true) {
+		//	time.Sleep(60 * time.Second)
+		//	_ = this.SaveToDisk()
+		//}
 	})
 
 	_, _ = this.m_pCronJobs.Cron("*/10 * * * *").Do(func() {
