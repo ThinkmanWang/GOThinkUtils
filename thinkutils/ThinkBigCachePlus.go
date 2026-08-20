@@ -5,7 +5,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/allegro/bigcache/v3"
 	"github.com/go-co-op/gocron"
 )
 
@@ -34,8 +33,10 @@ type ThinkBigCachePlus struct {
 	m_bStarted     bool
 	m_bSavedToDisk atomic.Bool
 	m_lock         sync.RWMutex
+	m_szFileName   string
 
-	m_mapPartition sync.Map
+	m_mapPartition    sync.Map
+	m_nSaveToDiskType ThinkBigCachePlusUpdateType
 
 	m_pCronJobs *gocron.Scheduler
 
@@ -51,7 +52,8 @@ type ThinkBigCachePlus struct {
 
 var (
 	g_pThinkBigCachePlusInstance *ThinkBigCachePlus = &ThinkBigCachePlus{
-		m_bStarted: false,
+		m_bStarted:   false,
+		m_szFileName: "ThinkBigCachePlus.data",
 	}
 )
 
@@ -103,6 +105,13 @@ func (this *ThinkBigCachePlus) emitUpdate(nType ThinkBigCachePlusUpdateType) {
 			go pFunc()
 		}
 	}
+
+	if this.m_nSaveToDiskType == nType {
+		go func() {
+			time.Sleep(60 * time.Second)
+			this.saveToDisk(this.m_szFileName)
+		}()
+	}
 }
 
 func (this *ThinkBigCachePlus) initCron() error {
@@ -126,7 +135,7 @@ func (this *ThinkBigCachePlus) initCron() error {
 		// 仅在进程启动后落盘一次，之后的周期落盘由整点任务负责。
 		if this.m_bSavedToDisk.CompareAndSwap(false, true) {
 			time.Sleep(60 * time.Second)
-			_ = this.saveToDisk("ThinkBigCachePlus.data")
+			_ = this.saveToDisk(this.m_szFileName)
 		}
 	})
 
@@ -159,7 +168,11 @@ func (this *ThinkBigCachePlus) initCron() error {
 	return nil
 }
 
-func (this *ThinkBigCachePlus) Start(cfg bigcache.Config) error {
+func (this *ThinkBigCachePlus) Start() error {
+	return this.StartEx(THINK_BIGCACHE_PLUS_UPDATE_1_DAY)
+}
+
+func (this *ThinkBigCachePlus) StartEx(nSaveToDiskType ThinkBigCachePlusUpdateType) error {
 	this.m_lock.Lock()
 	defer this.m_lock.Unlock()
 
@@ -167,9 +180,10 @@ func (this *ThinkBigCachePlus) Start(cfg bigcache.Config) error {
 		return nil
 	}
 
+	this.m_nSaveToDiskType = nSaveToDiskType
 	var err error = nil
 
-	err = this.loadFromDisk("ThinkBigCachePlus.data")
+	err = this.loadFromDisk(this.m_szFileName)
 	if err != nil {
 		goto err_ret
 	}
