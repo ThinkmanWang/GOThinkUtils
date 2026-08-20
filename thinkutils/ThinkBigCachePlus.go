@@ -400,6 +400,30 @@ func (this *ThinkBigCachePlusPartitionT[T]) Get(szKey string) (T, error) {
 	return zero, errors.New("ThinkBigCachePlus type mismatch in partition: " + this.m_szName)
 }
 
+// Has 判断指定 key 是否存在(不做类型断言，仅判断键存在与否)。
+func (this *ThinkBigCachePlusPartitionT[T]) Has(szKey string) bool {
+	_, ok := this.m_pPartition.m_mapData.Load(szKey)
+	return ok
+}
+
+// Delete 删除指定 key。用于需要"全量替换/解封"语义的分区。
+func (this *ThinkBigCachePlusPartitionT[T]) Delete(szKey string) {
+	this.m_pPartition.m_mapData.Delete(szKey)
+}
+
+// Range 遍历分区内所有键值，回调返回 false 时停止遍历。
+// 与 sync.Map.Range 语义一致：遍历期间的并发写不保证被看到，且不应假设快照一致性。
+// 类型断言失败的条目会被跳过(理论上不会发生，一个分区一个类型)。
+func (this *ThinkBigCachePlusPartitionT[T]) Range(f func(szKey string, data T) bool) {
+	this.m_pPartition.m_mapData.Range(func(k, v any) bool {
+		val, ok := v.(T)
+		if !ok {
+			return true
+		}
+		return f(k.(string), val)
+	})
+}
+
 // ThinkBigCachePlusRegType 为分区注册"一个类型"，内部用 gob 自动生成编解码，返回类型化句柄。
 // 一个分区一个类型；应在 Start 之前调用(通常放在各模块 init)。
 // 注意：gob 只编码导出字段；每条记录独立编码，会各自携带一份类型描述(体积/CPU 有额外开销，大数据量时留意)。
