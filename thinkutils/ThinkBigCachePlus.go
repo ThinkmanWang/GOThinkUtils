@@ -51,7 +51,7 @@ type ThinkBigCachePlusPartition struct {
 }
 
 type ThinkBigCachePlus struct {
-	m_bStarted     bool
+	m_bStarted     atomic.Bool
 	m_bSavedToDisk atomic.Bool
 	m_lock         sync.RWMutex
 	m_lockFile     sync.Mutex
@@ -74,7 +74,6 @@ type ThinkBigCachePlus struct {
 
 var (
 	g_pThinkBigCachePlusInstance *ThinkBigCachePlus = &ThinkBigCachePlus{
-		m_bStarted:   false,
 		m_szFileName: "ThinkBigCachePlus.data",
 	}
 )
@@ -143,9 +142,9 @@ func (this *ThinkBigCachePlus) loadFromDisk() error {
 	return nil
 }
 
-// saveToDisk 把各分区数据逐条流式编码写盘。
+// SaveToDisk 把各分区数据逐条流式编码写盘，允许调用者手动落盘。
 // 每个 partition 内是同一类数据，共用一个 ToByte；若分区未注册 ToByte 则跳过该分区。
-func (this *ThinkBigCachePlus) saveToDisk() error {
+func (this *ThinkBigCachePlus) SaveToDisk() error {
 	this.m_lockFile.Lock()
 	defer this.m_lockFile.Unlock()
 
@@ -257,7 +256,7 @@ func (this *ThinkBigCachePlus) emitUpdate(nType ThinkBigCachePlusUpdateType) {
 	if this.m_nSaveToDiskType == nType {
 		go func() {
 			time.Sleep(60 * time.Second)
-			_ = this.saveToDisk()
+			_ = this.SaveToDisk()
 		}()
 	}
 }
@@ -283,7 +282,7 @@ func (this *ThinkBigCachePlus) initCron() error {
 		// 仅在进程启动后落盘一次，之后的周期落盘由整点任务负责。
 		if this.m_bSavedToDisk.CompareAndSwap(false, true) {
 			time.Sleep(60 * time.Second)
-			_ = this.saveToDisk()
+			_ = this.SaveToDisk()
 		}
 	})
 
@@ -324,7 +323,7 @@ func (this *ThinkBigCachePlus) StartEx(nSaveToDiskType ThinkBigCachePlusUpdateTy
 	this.m_lock.Lock()
 	defer this.m_lock.Unlock()
 
-	if this.m_bStarted {
+	if this.m_bStarted.Load() {
 		return nil
 	}
 
@@ -341,7 +340,7 @@ func (this *ThinkBigCachePlus) StartEx(nSaveToDiskType ThinkBigCachePlusUpdateTy
 		goto err_ret
 	}
 
-	this.m_bStarted = true
+	this.m_bStarted.Store(true)
 	log.Info("ThinkBigCachePlus started successfully")
 
 err_ret:
@@ -395,6 +394,9 @@ func (this *ThinkBigCachePlus) Get(szPartition, szKey string) (any, error) {
 // 每个 partition 内是同一类数据，故编解码方法一致：ToByte 用于 saveToDisk，FromByte 用于 loadFromDisk。
 // 应在 Start 之前调用，以便 loadFromDisk 能正确把字节还原成 struct。
 func (this *ThinkBigCachePlus) RegByteFunction(szPartition string, pToByte ThinkBigCachePlusToByte, pFromByte ThinkBigCachePlusFromByte) {
+	this.m_lock.Lock()
+	defer this.m_lock.Unlock()
+
 	p := this.getOrCreatePartition(szPartition)
 	p.m_funcToByte = pToByte
 	p.m_funcFromByte = pFromByte
