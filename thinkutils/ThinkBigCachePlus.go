@@ -2,10 +2,12 @@ package thinkutils
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/gob"
 	"errors"
 	"io"
 	"os"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -48,6 +50,8 @@ type ThinkBigCachePlusPartition struct {
 	m_mapData      sync.Map
 	m_funcToByte   ThinkBigCachePlusToByte
 	m_funcFromByte ThinkBigCachePlusFromByte
+	// m_reflectType 记录该分区注册时的元素类型，用于类型化句柄的一致性校验(一个分区一个类型)。
+	m_reflectType reflect.Type
 }
 
 type ThinkBigCachePlus struct {
@@ -370,34 +374,65 @@ func (this *ThinkBigCachePlus) AddUpdateListener(nType ThinkBigCachePlusUpdateTy
 	}
 }
 
-// Set 存入数据。内存中直接保存实际 struct(any)，读取时零解码、无额外 GC 压力。
-func (this *ThinkBigCachePlus) Set(szPartition, szKey string, data any) error {
-	p := this.getOrCreatePartition(szPartition)
-	p.m_mapData.Store(szKey, data)
+// ThinkBigCachePlusPartitionT 是某分区的类型化句柄，提供编译期类型安全的 Set/Get。
+// 内存中直接保存实际 struct(T)，Get 只做一次类型断言、零解码、无额外 GC 压力。
+type ThinkBigCachePlusPartitionT[T any] struct {
+	m_pPartition *ThinkBigCachePlusPartition
+	m_szName     string
+}
+
+// Set 存入数据。data 的类型在编译期锁定为 T，无法传错类型。
+func (this *ThinkBigCachePlusPartitionT[T]) Set(szKey string, data T) error {
+	this.m_pPartition.m_mapData.Store(szKey, data)
 	return nil
 }
 
-// Get 获取数据，直接返回内存中的实际 struct(any)。
-func (this *ThinkBigCachePlus) Get(szPartition, szKey string) (any, error) {
-	v, ok := this.m_mapPartition.Load(szPartition)
+// Get 直接返回具体类型 T，调用端无需 .(T) 断言。
+func (this *ThinkBigCachePlusPartitionT[T]) Get(szKey string) (T, error) {
+	var zero T
+	data, ok := this.m_pPartition.m_mapData.Load(szKey)
 	if !ok {
-		return nil, errors.New("ThinkBigCachePlus partition not found: " + szPartition)
+		return zero, errors.New("ThinkBigCachePlus key not found: " + szKey)
 	}
-	p := v.(*ThinkBigCachePlusPartition)
-	if data, ok := p.m_mapData.Load(szKey); ok {
-		return data, nil
+	if v, ok := data.(T); ok {
+		return v, nil
 	}
-	return nil, errors.New("ThinkBigCachePlus key not found: " + szKey)
+	return zero, errors.New("ThinkBigCachePlus type mismatch in partition: " + this.m_szName)
 }
 
-// RegToByteFunction 为指定分区一次性注册编解码对。
-// 每个 partition 内是同一类数据，故编解码方法一致：ToByte 用于 saveToDisk，FromByte 用于 loadFromDisk。
-// 应在 Start 之前调用，以便 loadFromDisk 能正确把字节还原成 struct。
-func (this *ThinkBigCachePlus) RegByteFunction(szPartition string, pToByte ThinkBigCachePlusToByte, pFromByte ThinkBigCachePlusFromByte) {
+// ThinkBigCachePlusRegType 为分区注册"一个类型"，内部用 gob 自动生成编解码，返回类型化句柄。
+// 一个分区一个类型；应在 Start 之前调用(通常放在各模块 init)。
+// 注意：gob 只编码导出字段；每条记录独立编码，会各自携带一份类型描述(体积/CPU 有额外开销，大数据量时留意)。
+func ThinkBigCachePlusRegType[T any](this *ThinkBigCachePlus, szPartition string) *ThinkBigCachePlusPartitionT[T] {
 	this.m_lock.Lock()
 	defer this.m_lock.Unlock()
 
 	p := this.getOrCreatePartition(szPartition)
-	p.m_funcToByte = pToByte
-	p.m_funcFromByte = pFromByte
+	p.m_reflectType = reflect.TypeOf((*T)(nil)).Elem()
+	p.m_funcToByte = func(v any) ([]byte, error) {
+		var buf bytes.Buffer
+		if err := gob.NewEncoder(&buf).Encode(v); err != nil {
+			return nil, err
+		}
+		return buf.Bytes(), nil
+	}
+	p.m_funcFromByte = func(b []byte) (any, error) {
+		var out T
+		if err := gob.NewDecoder(bytes.NewReader(b)).Decode(&out); err != nil {
+			return nil, err
+		}
+		return out, nil
+	}
+	return &ThinkBigCachePlusPartitionT[T]{m_pPartition: p, m_szName: szPartition}
+}
+
+// ThinkBigCachePlusPartitionOf 返回已通过 RegType 注册分区的类型化句柄，不改动已注册的编解码。
+// 适用于在一处 RegType 注册、在别处按分区名再取类型化句柄使用的场景。
+// 若该分区已记录过类型且与 T 不一致，则记录告警(一个分区一个类型)。
+func ThinkBigCachePlusPartitionOf[T any](this *ThinkBigCachePlus, szPartition string) *ThinkBigCachePlusPartitionT[T] {
+	p := this.getOrCreatePartition(szPartition)
+	if t := reflect.TypeOf((*T)(nil)).Elem(); p.m_reflectType != nil && p.m_reflectType != t {
+		log.Error("ThinkBigCachePlus partition [%s] type mismatch: registered %s, requested %s", szPartition, p.m_reflectType.String(), t.String())
+	}
+	return &ThinkBigCachePlusPartitionT[T]{m_pPartition: p, m_szName: szPartition}
 }
