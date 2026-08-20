@@ -79,6 +79,15 @@ type ThinkBigCachePlus struct {
 var (
 	g_pThinkBigCachePlusInstance *ThinkBigCachePlus = &ThinkBigCachePlus{
 		m_szFileName: "ThinkBigCachePlus.data",
+
+		m_lst1MinListener:   make([]OnThinkBigCachePlusUpdate, 0),
+		m_lst5MinListener:   make([]OnThinkBigCachePlusUpdate, 0),
+		m_lst10MinListener:  make([]OnThinkBigCachePlusUpdate, 0),
+		m_lst30MinListener:  make([]OnThinkBigCachePlusUpdate, 0),
+		m_lst1HourListener:  make([]OnThinkBigCachePlusUpdate, 0),
+		m_lst6HourListener:  make([]OnThinkBigCachePlusUpdate, 0),
+		m_lst12HourListener: make([]OnThinkBigCachePlusUpdate, 0),
+		m_lst1DayListener:   make([]OnThinkBigCachePlusUpdate, 0),
 	}
 )
 
@@ -267,15 +276,6 @@ func (this *ThinkBigCachePlus) emitUpdate(nType ThinkBigCachePlusUpdateType) {
 
 func (this *ThinkBigCachePlus) initCron() error {
 	this.m_pCronJobs = gocron.NewScheduler(time.Local)
-
-	this.m_lst1MinListener = make([]OnThinkBigCachePlusUpdate, 0)
-	this.m_lst5MinListener = make([]OnThinkBigCachePlusUpdate, 0)
-	this.m_lst10MinListener = make([]OnThinkBigCachePlusUpdate, 0)
-	this.m_lst30MinListener = make([]OnThinkBigCachePlusUpdate, 0)
-	this.m_lst1HourListener = make([]OnThinkBigCachePlusUpdate, 0)
-	this.m_lst6HourListener = make([]OnThinkBigCachePlusUpdate, 0)
-	this.m_lst12HourListener = make([]OnThinkBigCachePlusUpdate, 0)
-	this.m_lst1DayListener = make([]OnThinkBigCachePlusUpdate, 0)
 
 	_, _ = this.m_pCronJobs.Cron("* * * * *").Do(func() {
 		this.emitUpdate(THINK_BIGCACHE_PLUS_UPDATE_1_MIN)
