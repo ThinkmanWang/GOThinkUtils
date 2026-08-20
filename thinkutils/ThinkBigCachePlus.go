@@ -61,11 +61,11 @@ func ThinkBigCachePlusInstance() *ThinkBigCachePlus {
 	return g_pThinkBigCachePlusInstance
 }
 
-func (this *ThinkBigCachePlus) loadFromDisk(szPath string) error {
+func (this *ThinkBigCachePlus) loadFromDisk() error {
 	return nil
 }
 
-func (this *ThinkBigCachePlus) saveToDisk(szPath string) error {
+func (this *ThinkBigCachePlus) saveToDisk() error {
 	return nil
 }
 
@@ -109,7 +109,7 @@ func (this *ThinkBigCachePlus) emitUpdate(nType ThinkBigCachePlusUpdateType) {
 	if this.m_nSaveToDiskType == nType {
 		go func() {
 			time.Sleep(60 * time.Second)
-			this.saveToDisk(this.m_szFileName)
+			_ = this.saveToDisk()
 		}()
 	}
 }
@@ -135,7 +135,7 @@ func (this *ThinkBigCachePlus) initCron() error {
 		// 仅在进程启动后落盘一次，之后的周期落盘由整点任务负责。
 		if this.m_bSavedToDisk.CompareAndSwap(false, true) {
 			time.Sleep(60 * time.Second)
-			_ = this.saveToDisk(this.m_szFileName)
+			_ = this.saveToDisk()
 		}
 	})
 
@@ -183,7 +183,7 @@ func (this *ThinkBigCachePlus) StartEx(nSaveToDiskType ThinkBigCachePlusUpdateTy
 	this.m_nSaveToDiskType = nSaveToDiskType
 	var err error = nil
 
-	err = this.loadFromDisk(this.m_szFileName)
+	err = this.loadFromDisk()
 	if err != nil {
 		goto err_ret
 	}
