@@ -157,7 +157,7 @@ func (this *LocalLogger) asyncWrite() {
 	}
 }
 
-//配置文件
+// 配置文件
 type logConfig struct {
 	TimeFormat string         `json:"TimeFormat"`
 	Console    *consoleLogger `json:"Console,omitempty"`
@@ -564,7 +564,7 @@ func DefaultLogger() *LocalLogger {
 	fileLoggerOnce.Do(func() {
 		l := NewLogger()
 		// E3: 生产环境关闭 console 输出，避免 stdout 在锁内拖慢高并发写入
-		l.DelLogger(AdapterConsole)
+		//l.DelLogger(AdapterConsole)
 		l.SetLogger("file", `{"filename":"thinklog.log", "daily": true, "append": true, "maxlines": 1000000}`)
 		fileLoggerInstance = l
 	})
