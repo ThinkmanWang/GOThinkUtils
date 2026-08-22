@@ -563,8 +563,9 @@ var (
 func DefaultLogger() *LocalLogger {
 	fileLoggerOnce.Do(func() {
 		l := NewLogger()
-		// E3: 生产环境关闭 console 输出，避免 stdout 在锁内拖慢高并发写入
-		//l.DelLogger(AdapterConsole)
+		// 默认同时保留 console + file 两个输出。
+		// 业务端可在任意时刻调用 l.DelLogger(AdapterConsole) 关闭 stdout 输出，
+		// 该操作与后台消费者并发安全（writeToLoggers 与 DelLogger 均在 this.lock 下操作 outputs）。
 		l.SetLogger("file", `{"filename":"thinklog.log", "daily": true, "append": true, "maxlines": 1000000}`)
 		fileLoggerInstance = l
 	})
