@@ -52,6 +52,8 @@ type ThinkBigCachePlusPartition struct {
 	m_funcFromByte ThinkBigCachePlusFromByte
 	// m_reflectType 记录该分区注册时的元素类型，用于类型化句柄的一致性校验(一个分区一个类型)。
 	m_reflectType reflect.Type
+	// m_bSaveToDisk 标记该分区是否需要落盘，默认 true；为 false 时 SaveToDisk 跳过该分区。
+	m_bSaveToDisk atomic.Bool
 }
 
 type ThinkBigCachePlus struct {
@@ -96,13 +98,23 @@ func ThinkBigCachePlusInstance() *ThinkBigCachePlus {
 }
 
 // getOrCreatePartition 返回指定分区(不存在则原子创建)。
+// bSaveToDisk 仅在首次创建时用于初始化该分区是否需要落盘的标记(默认调用方传 true)。
 // 存指针而非值：ThinkBigCachePlusPartition 内含 sync.Map，绝不能被拷贝。
-func (this *ThinkBigCachePlus) getOrCreatePartition(szPartition string) *ThinkBigCachePlusPartition {
+func (this *ThinkBigCachePlus) getOrCreatePartition(szPartition string, bSaveToDisk bool) *ThinkBigCachePlusPartition {
 	if v, ok := this.m_mapPartition.Load(szPartition); ok {
 		return v.(*ThinkBigCachePlusPartition)
 	}
-	actual, _ := this.m_mapPartition.LoadOrStore(szPartition, &ThinkBigCachePlusPartition{})
+	p := &ThinkBigCachePlusPartition{}
+	p.m_bSaveToDisk.Store(bSaveToDisk)
+	actual, _ := this.m_mapPartition.LoadOrStore(szPartition, p)
 	return actual.(*ThinkBigCachePlusPartition)
+}
+
+// NeedSaveToDisk 控制指定分区是否需要落盘。默认所有分区都会落盘；
+// 设为 false 后，SaveToDisk 会跳过该分区(内存数据保留，只是不写盘)。
+func (this *ThinkBigCachePlus) NeedSaveToDisk(szPartition string, bNeed bool) {
+	p := this.getOrCreatePartition(szPartition, bNeed)
+	p.m_bSaveToDisk.Store(bNeed)
 }
 
 // loadFromDisk 从本地文件逐条流式解码，按分区把数据还原成实际 struct 存入 m_mapPartition。
@@ -136,7 +148,7 @@ func (this *ThinkBigCachePlus) loadFromDisk() error {
 			return nil
 		}
 
-		p := this.getOrCreatePartition(entry.Partition)
+		p := this.getOrCreatePartition(entry.Partition, true)
 		fromByte := p.m_funcFromByte
 		if nil == fromByte {
 			// 该分区未注册 FromByte，无法还原 struct，跳过。
@@ -179,6 +191,10 @@ func (this *ThinkBigCachePlus) SaveToDisk() error {
 	this.m_mapPartition.Range(func(k, v any) bool {
 		szPartition := k.(string)
 		p := v.(*ThinkBigCachePlusPartition)
+		if !p.m_bSaveToDisk.Load() {
+			// 该分区被标记为不落盘(NeedSaveToDisk=false)，整个分区跳过。
+			return true
+		}
 		toByte := p.m_funcToByte
 		if nil == toByte {
 			// 分区未注册 ToByte，跳过整个分区。
@@ -431,7 +447,7 @@ func ThinkBigCachePlusRegType[T any](this *ThinkBigCachePlus, szPartition string
 	this.m_lock.Lock()
 	defer this.m_lock.Unlock()
 
-	p := this.getOrCreatePartition(szPartition)
+	p := this.getOrCreatePartition(szPartition, true)
 	p.m_reflectType = reflect.TypeOf((*T)(nil)).Elem()
 	p.m_funcToByte = func(v any) ([]byte, error) {
 		var buf bytes.Buffer
@@ -454,7 +470,7 @@ func ThinkBigCachePlusRegType[T any](this *ThinkBigCachePlus, szPartition string
 // 适用于在一处 RegType 注册、在别处按分区名再取类型化句柄使用的场景。
 // 若该分区已记录过类型且与 T 不一致，则记录告警(一个分区一个类型)。
 func ThinkBigCachePlusPartitionOf[T any](this *ThinkBigCachePlus, szPartition string) *ThinkBigCachePlusPartitionT[T] {
-	p := this.getOrCreatePartition(szPartition)
+	p := this.getOrCreatePartition(szPartition, true)
 	if t := reflect.TypeOf((*T)(nil)).Elem(); p.m_reflectType != nil && p.m_reflectType != t {
 		log.Error("ThinkBigCachePlus partition [%s] type mismatch: registered %s, requested %s", szPartition, p.m_reflectType.String(), t.String())
 	}
