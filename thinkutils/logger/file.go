@@ -14,6 +14,9 @@ import (
 	"time"
 )
 
+// B3: 复用写入缓冲，避免每条日志 msg+="\n" 与 []byte(msg) 两次分配
+var fileBufPool = sync.Pool{New: func() interface{} { b := make([]byte, 0, 256); return &b }}
+
 type fileLogger struct {
 	sync.RWMutex
 	fileWriter *os.File
@@ -89,13 +92,19 @@ func (f *fileLogger) LogWrite(when time.Time, msgText interface{}, level int) er
 	}
 
 	day := when.Day()
-	msg += "\n"
+
+	// B3: 从池取缓冲拼接 msg+'\n'，单次 Write，避免两次堆分配
+	bufp := fileBufPool.Get().(*[]byte)
+	buf := append((*bufp)[:0], msg...)
+	buf = append(buf, '\n')
+	n := len(buf)
+
 	if f.Append {
 		f.RLock()
-		if f.needCreateFresh(len(msg), day) {
+		if f.needCreateFresh(n, day) {
 			f.RUnlock()
 			f.Lock()
-			if f.needCreateFresh(len(msg), day) {
+			if f.needCreateFresh(n, day) {
 				if err := f.createFreshFile(when); err != nil {
 					fmt.Fprintf(os.Stderr, "createFreshFile(%q): %s\n", f.Filename, err)
 				}
@@ -107,12 +116,15 @@ func (f *fileLogger) LogWrite(when time.Time, msgText interface{}, level int) er
 	}
 
 	f.Lock()
-	_, err := f.fileWriter.Write([]byte(msg))
+	_, err := f.fileWriter.Write(buf)
 	if err == nil {
 		f.maxLinesCurLines++
-		f.maxSizeCurSize += len(msg)
+		f.maxSizeCurSize += n
 	}
 	f.Unlock()
+
+	*bufp = buf
+	fileBufPool.Put(bufp)
 	return err
 }
 
@@ -280,7 +292,7 @@ func init() {
 		Append:     true,
 		LogLevel:   LevelDebug,
 		PermitMask: "0777",
-		MaxLines:   10,
+		MaxLines:   1000000, // E1: 修正默认值，避免每 10 行就疯狂轮转
 		MaxSize:    10 * 1024 * 1024,
 	})
 }

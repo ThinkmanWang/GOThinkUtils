@@ -9,8 +9,14 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
+
+	"github.com/petermattis/goid"
 )
+
+// 异步日志队列容量，业务线程只负责入队，后台单独 goroutine 落盘
+const logAsyncQueueSize = 1 << 16
 
 // 默认日志输出
 var defaultLogger *LocalLogger
@@ -88,6 +94,19 @@ type loginfo struct {
 	CorID   int
 }
 
+// 异步队列中传递的日志条目，携带 when/level 以及复用的 loginfo
+type logMsg struct {
+	when  time.Time
+	level int
+	info  loginfo
+}
+
+// D2: 复用 logMsg(含 loginfo)，降低每条日志的堆分配
+var logMsgPool = sync.Pool{New: func() interface{} { return new(logMsg) }}
+
+// D1: 复用 strings.Builder，减少拼接产生的分配
+var sbPool = sync.Pool{New: func() interface{} { return new(strings.Builder) }}
+
 type nameLogger struct {
 	Logger
 	name   string
@@ -102,6 +121,10 @@ type LocalLogger struct {
 	callDepth  int
 	timeFormat string
 	usePath    string
+
+	msgChan      chan *logMsg   // C1: 异步日志队列
+	wg           sync.WaitGroup // 用于优雅关闭时等待队列排空
+	droppedCount uint64         // 队列满时被丢弃的日志条数(atomic)
 }
 
 func NewLogger(depth ...int) *LocalLogger {
@@ -117,7 +140,21 @@ func NewLogger(depth ...int) *LocalLogger {
 	l.callDepth = dep
 	l.SetLogger(AdapterConsole)
 	l.timeFormat = logTimeDefaultFormat
+
+	// C1: 启动后台消费者，业务线程只入队，磁盘 IO 与业务线程解耦
+	l.msgChan = make(chan *logMsg, logAsyncQueueSize)
+	l.wg.Add(1)
+	go l.asyncWrite()
 	return l
+}
+
+// asyncWrite 后台单消费者：从队列取出日志并写入各适配器
+func (this *LocalLogger) asyncWrite() {
+	defer this.wg.Done()
+	for lm := range this.msgChan {
+		this.writeToLoggers(lm.when, &lm.info, lm.level)
+		logMsgPool.Put(lm)
+	}
 }
 
 //配置文件
@@ -199,7 +236,14 @@ func (this *LocalLogger) SetLogPathTrim(trimPath string) {
 }
 
 func (this *LocalLogger) writeToLoggers(when time.Time, msg *loginfo, level int) {
-	for _, l := range this.outputs {
+	// 取出 outputs 的快照，避免与 SetLogger/DelLogger/Reset 并发读写切片头
+	this.lock.Lock()
+	outputs := this.outputs
+	this.lock.Unlock()
+
+	var msgStr string
+	built := false
+	for _, l := range outputs {
 		if l.name == AdapterConn {
 			//网络日志，使用json格式发送,此处使用结构体，用于类似ElasticSearch功能检索
 			err := l.LogWrite(when, msg, level)
@@ -209,7 +253,23 @@ func (this *LocalLogger) writeToLoggers(when time.Time, msg *loginfo, level int)
 			continue
 		}
 
-		msgStr := when.Format(this.timeFormat) + " [" + msg.Level + "] " + "[" + msg.Path + "](" + strconv.Itoa(msg.CorID) + ") " + msg.Content
+		if !built {
+			// D1: 用池化的 strings.Builder 拼接，减少多次 + 造成的分配
+			sb := sbPool.Get().(*strings.Builder)
+			sb.Reset()
+			sb.WriteString(when.Format(this.timeFormat))
+			sb.WriteString(" [")
+			sb.WriteString(msg.Level)
+			sb.WriteString("] [")
+			sb.WriteString(msg.Path)
+			sb.WriteString("](")
+			sb.WriteString(strconv.Itoa(msg.CorID))
+			sb.WriteString(") ")
+			sb.WriteString(msg.Content)
+			msgStr = sb.String()
+			sbPool.Put(sb)
+			built = true
+		}
 		err := l.LogWrite(when, msgStr, level)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to WriteMsg to adapter:%v,error:%v\n", l.name, err)
@@ -217,27 +277,16 @@ func (this *LocalLogger) writeToLoggers(when time.Time, msg *loginfo, level int)
 	}
 }
 
-func (this *LocalLogger) goid() int {
-	var buf [64]byte
-	n := runtime.Stack(buf[:], false)
-	idField := strings.Fields(strings.TrimPrefix(string(buf[:n]), "goroutine "))[0]
-	id, err := strconv.Atoi(idField)
-	if err != nil {
-		panic(fmt.Sprintf("cannot get goroutine id: %v", err))
-	}
-	return id
-}
-
 func (this *LocalLogger) writeMsg(logLevel int, msg string, v ...interface{}) error {
 	if !this.init {
 		this.SetLogger(AdapterConsole)
 	}
-	msgSt := new(loginfo)
 	src := ""
 	if len(v) > 0 {
 		msg = fmt.Sprintf(msg, v...)
 	}
 	when := time.Now()
+	// runtime.Caller 必须在调用方 goroutine 执行，无法移到后台
 	_, file, lineno, ok := runtime.Caller(this.callDepth)
 	var strim string = "src/"
 	if this.usePath != "" {
@@ -249,15 +298,32 @@ func (this *LocalLogger) writeMsg(logLevel int, msg string, v ...interface{}) er
 			fmt.Sprintf("%s:%d", stringTrim(file, strim), lineno), "%2e", ".", -1)
 	}
 
-	msgSt.Level = levelPrefix[logLevel]
-	msgSt.Path = src
-	msgSt.Content = msg
-	msgSt.Name = this.appName
-	msgSt.Time = when.Format(this.timeFormat)
-	msgSt.CorID = this.goid()
-	this.writeToLoggers(when, msgSt, logLevel)
+	// D2: 从池中取 logMsg，填充后入队
+	lm := logMsgPool.Get().(*logMsg)
+	lm.when = when
+	lm.level = logLevel
+	lm.info.Level = levelPrefix[logLevel]
+	lm.info.Path = src
+	lm.info.Content = msg
+	lm.info.Name = this.appName
+	lm.info.Time = when.Format(this.timeFormat)
+	// A1: 汇编直读 goroutine id，替代昂贵的 runtime.Stack 解析
+	lm.info.CorID = int(goid.Get())
+
+	// C1: 入队交给后台消费者落盘；宁丢日志不阻塞业务：队列满时非阻塞丢弃并计数
+	select {
+	case this.msgChan <- lm:
+	default:
+		logMsgPool.Put(lm)
+		atomic.AddUint64(&this.droppedCount, 1)
+	}
 
 	return nil
+}
+
+// DroppedCount 返回因队列满而被丢弃的日志条数，便于监控告警
+func (this *LocalLogger) DroppedCount() uint64 {
+	return atomic.LoadUint64(&this.droppedCount)
 }
 
 func (this *LocalLogger) Fatal(format string, args ...interface{}) {
@@ -311,6 +377,14 @@ func (this *LocalLogger) Trace(format string, v ...interface{}) {
 }
 
 func (this *LocalLogger) Close() {
+	// 关闭队列并等待后台消费者把剩余日志全部落盘
+	this.lock.Lock()
+	if this.msgChan != nil {
+		close(this.msgChan)
+		this.msgChan = nil
+	}
+	this.lock.Unlock()
+	this.wg.Wait()
 
 	for _, l := range this.outputs {
 		l.Destroy()
@@ -477,9 +551,22 @@ func stringTrim(s string, cut string) string {
 	return ss[1]
 }
 
-func DefaultLogger() *LocalLogger {
-	log := NewLogger()
-	log.SetLogger("file", `{"filename":"thinklog.log", "daily": true, "append": true, "maxlines": 1000000}`)
+var (
+	fileLoggerInstance *LocalLogger
+	fileLoggerOnce     sync.Once
+)
 
-	return log
+// DefaultLogger 返回进程级单例的文件日志器。
+// 历史上使用方会到处 `logger.DefaultLogger()`，若每次都 NewLogger 会各自创建
+// 一条 65536 的队列、一个消费者 goroutine 以及指向同一文件的句柄，纯属浪费。
+// 这里用 sync.Once 收敛为单例：所有调用方共享同一实例、同一队列、同一消费者。
+func DefaultLogger() *LocalLogger {
+	fileLoggerOnce.Do(func() {
+		l := NewLogger()
+		// E3: 生产环境关闭 console 输出，避免 stdout 在锁内拖慢高并发写入
+		l.DelLogger(AdapterConsole)
+		l.SetLogger("file", `{"filename":"thinklog.log", "daily": true, "append": true, "maxlines": 1000000}`)
+		fileLoggerInstance = l
+	})
+	return fileLoggerInstance
 }

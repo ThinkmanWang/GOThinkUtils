@@ -58,6 +58,7 @@ func testLoad() {
 }
 
 func main() {
+	log.Info("FXXK")
 	thinkutils.ThinkBigCachePlusInstance().AddUpdateListener(thinkutils.THINK_BIGCACHE_PLUS_UPDATE_1_MIN, func() {
 		log.Info("Start refresh")
 	})
